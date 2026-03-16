@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LeaseScan AI — Know Before You Sign</title>
-  <meta name="description" content="Upload any residential lease — LeaseScan AI flags risky clauses, hidden fees, and tells you if you're overpaying for your area." />
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     [x-cloak] { display: none !important; }
     .drop-zone.dragging { border-color: #3b82f6; background-color: #eff6ff; }
@@ -14,349 +14,450 @@
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .fade-in { animation: fadeIn 0.4s ease-in; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .risk-Low    { background: #dcfce7; color: #15803d; }
+    .risk-Medium { background: #fef9c3; color: #854d0e; }
+    .risk-High   { background: #fee2e2; color: #b91c1c; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800" x-data="leaseApp()" x-cloak>
 
-  <!-- Header -->
-  <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">L</div>
-      <span class="font-semibold text-slate-800">LeaseScan <span class="text-blue-600">AI</span></span>
+  <!-- NAV -->
+  <nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">&#127968;</span>
+      <span class="font-bold text-lg text-blue-700">LeaseScan AI</span>
     </div>
-    <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Beta</span>
-  </header>
-
-  <!-- Hero -->
-  <section class="text-center py-14 px-4">
-    <h1 class="text-4xl font-bold text-slate-900 mb-3">Know Before You Sign</h1>
-    <p class="text-slate-500 text-lg max-w-xl mx-auto">Upload any residential lease — LeaseScan AI flags risky clauses, hidden fees, and tells you if you're overpaying for your area.</p>
-  </section>
-
-  <!-- Main Card -->
-  <main class="max-w-4xl mx-auto px-4 pb-20">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-      <div class="grid md:grid-cols-5 gap-8">
-
-        <!-- Left: Upload + Options -->
-        <div class="md:col-span-3 space-y-5">
-
-          <!-- Drop Zone -->
-          <div
-            class="drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50"
-            :class="{'dragging': isDragging}"
-            @dragover.prevent="isDragging=true"
-            @dragleave.prevent="isDragging=false"
-            @drop.prevent="handleDrop($event)"
-            @click="$refs.fileInput.click()"
-          >
-            <input type="file" accept=".pdf" class="hidden" x-ref="fileInput" @change="handleFileInput($event)" />
-
-            <template x-if="!file">
-              <div>
-                <div class="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
-                  <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                </div>
-                <p class="text-slate-700 font-medium">Drop your lease PDF here</p>
-                <p class="text-slate-400 text-sm mt-1">or click to browse</p>
-                <p class="text-slate-300 text-xs mt-3">PDF files only · Max 20MB</p>
-              </div>
-            </template>
-
-            <template x-if="file">
-              <div>
-                <div class="w-16 h-16 mx-auto mb-4 bg-green-50 rounded-2xl flex items-center justify-center">
-                  <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/>
-                  </svg>
-                </div>
-                <p class="text-slate-700 font-medium" x-text="file.name"></p>
-                <p class="text-slate-400 text-sm mt-1" x-text="formatSize(file.size)"></p>
-                <p class="text-blue-500 text-xs mt-3 underline" @click.stop="clearFile()">Remove file</p>
-              </div>
-            </template>
-          </div>
-
-          <!-- Location input -->
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Your City / ZIP <span class="text-slate-400 font-normal">(for rent comparison)</span></label>
-            <input
-              type="text"
-              x-model="location"
-              placeholder="e.g. Austin, TX or 78701"
-              class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p class="text-xs text-slate-400 mt-1">For rent comparison</p>
-          </div>
-
-          <!-- Bedrooms -->
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Bedrooms</label>
-            <select x-model="bedrooms" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="studio">Studio</option>
-              <option value="1" selected>1 Bedroom</option>
-              <option value="2">2 Bedrooms</option>
-              <option value="3">3 Bedrooms</option>
-              <option value="4+">4+ Bedrooms</option>
-            </select>
-          </div>
+    <div class="flex items-center gap-3">
+      <template x-if="user">
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-slate-500" x-text="user.email"></span>
+          <template x-if="!subscribed">
+            <button @click="startCheckout()"
+              class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition">
+              Upgrade &middot; $12/mo
+            </button>
+          </template>
+          <template x-if="subscribed">
+            <span class="text-xs bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full">Pro &#10003;</span>
+          </template>
+          <button @click="signOut()" class="text-sm text-slate-500 hover:text-red-500 transition">Sign out</button>
         </div>
-
-        <!-- Right: Analyze Button + Info -->
-        <div class="md:col-span-2 flex flex-col justify-between gap-6">
-          <div class="bg-slate-50 rounded-2xl p-5 space-y-4">
-            <p class="text-sm font-semibold text-slate-700">What you'll get:</p>
-            <ul class="space-y-3">
-              <template x-for="item in features">
-                <li class="flex items-start gap-2 text-sm text-slate-600">
-                  <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  <span x-text="item"></span>
-                </li>
-              </template>
-            </ul>
-          </div>
-
-          <button
-            @click="analyze()"
-            :disabled="!file || loading"
-            class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl py-4 transition-colors flex items-center justify-center gap-2"
-          >
-            <template x-if="loading">
-              <svg class="spinner w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-              </svg>
-            </template>
-            <span x-text="loading ? 'Analyzing...' : 'Analyze My Lease →'"></span>
+      </template>
+      <template x-if="!user">
+        <div class="flex gap-2">
+          <button @click="authMode='login'; showAuth=true"
+            class="text-sm text-blue-600 hover:underline font-medium">Sign in</button>
+          <button @click="authMode='signup'; showAuth=true"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition">
+            Get started
           </button>
         </div>
-      </div>
+      </template>
+    </div>
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div x-show="showAuth" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative" @click.stop>
+      <button @click="showAuth=false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+
+      <h2 class="text-2xl font-bold text-center mb-1" x-text="authMode==='login' ? 'Welcome back' : 'Create your account'"></h2>
+      <p class="text-center text-slate-500 text-sm mb-6" x-text="authMode==='login' ? 'Sign in to access your lease analyses' : 'Start reviewing leases for $12/mo'"></p>
+
+      <div x-show="authError" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4" x-text="authError"></div>
+      <div x-show="authSuccess" class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-2 mb-4" x-text="authSuccess"></div>
+
+      <form @submit.prevent="submitAuth()">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+          <input x-model="authEmail" type="email" required placeholder="you@example.com"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+          <input x-model="authPassword" type="password" required placeholder="8+ characters"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <button type="submit" :disabled="authLoading"
+          class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+          <template x-if="authLoading">
+            <svg class="spinner w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </template>
+          <span x-text="authMode==='login' ? 'Sign in' : 'Create account'"></span>
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-slate-500 mt-4">
+        <template x-if="authMode==='login'">
+          <span>Don't have an account?
+            <button @click="authMode='signup'" class="text-blue-600 hover:underline font-medium">Sign up</button>
+          </span>
+        </template>
+        <template x-if="authMode==='signup'">
+          <span>Already have an account?
+            <button @click="authMode='login'" class="text-blue-600 hover:underline font-medium">Sign in</button>
+          </span>
+        </template>
+      </p>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTION BANNER -->
+  <div x-show="user && !subscribed && !loadingSubscription"
+    class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center py-3 px-4">
+    <span class="text-sm">You need an active subscription to analyze leases.</span>
+    <button @click="startCheckout()"
+      class="ml-3 bg-white text-blue-700 font-semibold text-sm px-4 py-1 rounded-full hover:bg-blue-50 transition">
+      Subscribe &middot; $12/mo
+    </button>
+  </div>
+
+  <!-- MAIN -->
+  <main class="max-w-4xl mx-auto px-4 py-12">
+    <div class="text-center mb-10">
+      <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight">
+        Know Before You Sign
+      </h1>
+      <p class="text-xl text-slate-500 max-w-2xl mx-auto">
+        Upload your lease and our AI attorney reviews it in seconds &mdash; spotting red flags, comparing market rates, and giving you negotiation ammo.
+      </p>
     </div>
 
-    <!-- Error -->
-    <template x-if="error">
-      <div class="mt-6 bg-red-50 border border-red-200 rounded-2xl p-5 fade-in">
-        <p class="text-red-700 font-medium text-sm" x-text="error"></p>
-      </div>
-    </template>
+    <!-- UPLOAD CARD -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-8">
 
-    <!-- Results -->
-    <template x-if="results">
-      <div class="mt-8 space-y-6 fade-in">
-
-        <!-- Score -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-6">
-          <div class="shrink-0">
-            <div class="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold border-4"
-              :class="{
-                'border-green-400 bg-green-50 text-green-700': results.risk_score <= 3,
-                'border-yellow-400 bg-yellow-50 text-yellow-700': results.risk_score > 3 && results.risk_score <= 6,
-                'border-red-400 bg-red-50 text-red-700': results.risk_score > 6
-              }"
-              x-text="results.risk_score + '/10'"
-            ></div>
-          </div>
+      <div class="drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50 mb-6"
+           :class="{'dragging': isDragging}"
+           @dragover.prevent="isDragging=true"
+           @dragleave.prevent="isDragging=false"
+           @drop.prevent="handleDrop($event)"
+           @click="$refs.fileInput.click()">
+        <input type="file" accept=".pdf" class="hidden" x-ref="fileInput" @change="handleFile($event.target.files[0])" />
+        <template x-if="!file">
           <div>
-            <p class="text-sm text-slate-500 mb-1">Overall Risk Score</p>
-            <p class="text-xl font-bold"
-              :class="{
-                'text-green-700': results.risk_score <= 3,
-                'text-yellow-700': results.risk_score > 3 && results.risk_score <= 6,
-                'text-red-700': results.risk_score > 6
-              }"
-              x-text="results.risk_score <= 3 ? 'Low Risk' : results.risk_score <= 6 ? 'Moderate Risk' : 'High Risk'"
-            ></p>
-            <p class="text-slate-500 text-sm mt-1" x-text="results.summary"></p>
-          </div>
-        </div>
-
-        <!-- Rent Comparison -->
-        <template x-if="results.rent_analysis">
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-              </svg>
-              Rent Comparison
-            </h2>
-            <p class="text-slate-600 text-sm" x-text="results.rent_analysis"></p>
+            <div class="text-5xl mb-3">&#128196;</div>
+            <p class="font-semibold text-slate-700 text-lg">Drop your lease PDF here</p>
+            <p class="text-slate-400 text-sm mt-1">or click to browse &middot; PDF up to 20 MB</p>
           </div>
         </template>
-
-        <!-- Risky Clauses -->
-        <template x-if="results.risky_clauses && results.risky_clauses.length">
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-              </svg>
-              Risky Clauses
-            </h2>
-            <div class="space-y-4">
-              <template x-for="clause in results.risky_clauses" :key="clause.title">
-                <div class="bg-red-50 border border-red-100 rounded-xl p-4">
-                  <div class="flex items-center justify-between mb-1">
-                    <p class="font-medium text-red-800 text-sm" x-text="clause.title"></p>
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium"
-                      :class="{
-                        'bg-red-100 text-red-700': clause.severity === 'high',
-                        'bg-yellow-100 text-yellow-700': clause.severity === 'medium',
-                        'bg-blue-100 text-blue-700': clause.severity === 'low'
-                      }"
-                      x-text="clause.severity"
-                    ></span>
-                  </div>
-                  <p class="text-slate-600 text-sm" x-text="clause.explanation"></p>
-                  <template x-if="clause.quote">
-                    <p class="mt-2 text-xs text-slate-500 italic border-l-2 border-red-200 pl-3" x-text="'\"' + clause.quote + '\"'"></p>
-                  </template>
-                </div>
-              </template>
-            </div>
+        <template x-if="file">
+          <div>
+            <div class="text-4xl mb-2">&#9989;</div>
+            <p class="font-semibold text-slate-700" x-text="file.name"></p>
+            <p class="text-slate-400 text-sm mt-1" x-text="(file.size/1024/1024).toFixed(2) + ' MB'"></p>
           </div>
         </template>
-
-        <!-- Hidden Fees -->
-        <template x-if="results.hidden_fees && results.hidden_fees.length">
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              Hidden Fees
-            </h2>
-            <div class="space-y-3">
-              <template x-for="fee in results.hidden_fees" :key="fee.name">
-                <div class="flex items-start justify-between bg-yellow-50 border border-yellow-100 rounded-xl p-4">
-                  <div>
-                    <p class="font-medium text-yellow-800 text-sm" x-text="fee.name"></p>
-                    <p class="text-slate-600 text-sm mt-0.5" x-text="fee.description"></p>
-                  </div>
-                  <template x-if="fee.amount">
-                    <span class="text-yellow-700 font-semibold text-sm ml-4 shrink-0" x-text="fee.amount"></span>
-                  </template>
-                </div>
-              </template>
-            </div>
-          </div>
-        </template>
-
-        <!-- Recommendations -->
-        <template x-if="results.recommendations && results.recommendations.length">
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              Recommendations
-            </h2>
-            <ul class="space-y-2">
-              <template x-for="rec in results.recommendations" :key="rec">
-                <li class="flex items-start gap-2 text-sm text-slate-600">
-                  <svg class="w-4 h-4 text-green-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                  </svg>
-                  <span x-text="rec"></span>
-                </li>
-              </template>
-            </ul>
-          </div>
-        </template>
-
-        <!-- Analyze Another -->
-        <div class="text-center">
-          <button @click="reset()" class="text-blue-600 hover:text-blue-800 text-sm underline">Analyze another lease</button>
-        </div>
-
       </div>
-    </template>
 
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Location (optional)</label>
+          <input x-model="location" type="text" placeholder="e.g. Austin, TX"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Bedrooms</label>
+          <select x-model="bedrooms"
+            class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="0">Studio</option>
+            <option value="1" selected>1 BR</option>
+            <option value="2">2 BR</option>
+            <option value="3">3 BR</option>
+            <option value="4">4+ BR</option>
+          </select>
+        </div>
+      </div>
+
+      <button @click="handleAnalyze()"
+        :disabled="!file || loading"
+        class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl text-lg transition flex items-center justify-center gap-3">
+        <template x-if="loading">
+          <svg class="spinner w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </template>
+        <span x-text="loading ? 'Analyzing lease...' : 'Analyze My Lease'"></span>
+      </button>
+
+      <div x-show="error" class="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm" x-text="error"></div>
+    </div>
+
+    <!-- RESULTS -->
+    <div x-show="results" class="fade-in">
+
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+          <h2 class="text-2xl font-bold text-slate-900">Analysis Results</h2>
+          <span class="px-4 py-1 rounded-full text-sm font-bold"
+            :class="'risk-' + (results.overall_risk || 'Medium')"
+            x-text="(results.overall_risk || 'Medium') + ' Risk'"></span>
+        </div>
+        <p class="text-slate-600 leading-relaxed" x-text="results.summary"></p>
+      </div>
+
+      <div x-show="results.financial_summary" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Financial Summary</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <template x-for="[label, val] in Object.entries(results.financial_summary || {})">
+            <div class="bg-slate-50 rounded-xl p-4 text-center">
+              <div class="text-xs text-slate-500 uppercase tracking-wide mb-1"
+                x-text="label.replace(/_/g,' ')"></div>
+              <div class="font-bold text-slate-800" x-text="val || 'N/A'"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="results.red_flags && results.red_flags.length" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Red Flags</h3>
+        <div class="space-y-4">
+          <template x-for="flag in results.red_flags">
+            <div class="border-l-4 border-red-400 bg-red-50 rounded-r-xl px-4 py-3">
+              <div class="font-semibold text-red-800" x-text="flag.title"></div>
+              <div class="text-red-700 text-sm mt-1" x-text="flag.description"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="results.good_clauses && results.good_clauses.length" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Tenant-Friendly Clauses</h3>
+        <div class="space-y-4">
+          <template x-for="item in results.good_clauses">
+            <div class="border-l-4 border-green-400 bg-green-50 rounded-r-xl px-4 py-3">
+              <div class="font-semibold text-green-800" x-text="item.title"></div>
+              <div class="text-green-700 text-sm mt-1" x-text="item.description"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div x-show="results.missing_clauses && results.missing_clauses.length" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Missing Protections</h3>
+        <ul class="space-y-2">
+          <template x-for="item in results.missing_clauses">
+            <li class="flex items-start gap-2 text-slate-600 text-sm">
+              <span class="text-amber-500 mt-0.5">&#x2022;</span>
+              <span x-text="item"></span>
+            </li>
+          </template>
+        </ul>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div x-show="results.market_comparison" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+          <h3 class="text-lg font-bold text-slate-900 mb-3">Market Comparison</h3>
+          <p class="text-slate-600 text-sm leading-relaxed" x-text="results.market_comparison"></p>
+        </div>
+        <div x-show="results.negotiation_tips && results.negotiation_tips.length" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+          <h3 class="text-lg font-bold text-slate-900 mb-3">Negotiation Tips</h3>
+          <ul class="space-y-2">
+            <template x-for="tip in results.negotiation_tips">
+              <li class="flex items-start gap-2 text-slate-600 text-sm">
+                <span class="text-blue-500 mt-0.5">&#x2192;</span>
+                <span x-text="tip"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </div>
+
+      <div x-show="results.key_dates && results.key_dates.length" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-4">Key Dates &amp; Deadlines</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <template x-for="d in results.key_dates">
+            <div class="bg-slate-50 rounded-xl p-3">
+              <div class="text-xs text-slate-500 uppercase tracking-wide" x-text="d.label"></div>
+              <div class="font-semibold text-slate-800 mt-0.5" x-text="d.value"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button @click="reset()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-6 py-3 rounded-2xl transition">
+          Analyze Another Lease
+        </button>
+      </div>
+    </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="text-center text-xs text-slate-400 pb-10">
-    LeaseScan AI · Not legal advice · Always consult a professional
+  <footer class="text-center text-slate-400 text-xs py-8 border-t border-slate-100 mt-8">
+    <p>LeaseScan AI &middot; AI-powered lease review &middot; Not legal advice</p>
+    <p class="mt-1">Questions? <a href="mailto:support@leasescanai.com" class="hover:underline">support@leasescanai.com</a></p>
   </footer>
 
-  <script>
-    function leaseApp() {
-      return {
-        file: null,
-        location: '',
-        bedrooms: '1',
-        isDragging: false,
-        loading: false,
-        results: null,
-        error: null,
-        features: [
-          'Risky clause detection',
-          'Hidden fee breakdown',
-          'Rent vs. market comparison',
-          'Plain-English explanations',
-          'Negotiation tips'
-        ],
+<script>
+const SUPABASE_URL  = 'https://zbsjbvaffkbwhliujqqy.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2pidmFmZmtid2hsaXVqcXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTvX5ywSW3xLf82JpAs';
+const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-        handleDrop(e) {
-          this.isDragging = false;
-          const f = e.dataTransfer.files[0];
-          if (f && f.type === 'application/pdf') { this.file = f; this.error = null; }
-          else this.error = 'Please upload a PDF file.';
-        },
+function leaseApp() {
+  return {
+    user: null,
+    supaSession: null,
+    showAuth: false,
+    authMode: 'login',
+    authEmail: '',
+    authPassword: '',
+    authLoading: false,
+    authError: '',
+    authSuccess: '',
+    subscribed: false,
+    loadingSubscription: false,
+    file: null,
+    location: '',
+    bedrooms: 1,
+    loading: false,
+    error: '',
+    results: null,
+    isDragging: false,
 
-        handleFileInput(e) {
-          const f = e.target.files[0];
-          if (f) { this.file = f; this.error = null; }
-        },
-
-        clearFile() {
-          this.file = null;
-          this.$refs.fileInput.value = '';
-        },
-
-        formatSize(bytes) {
-          if (bytes < 1024) return bytes + ' B';
-          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-          return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        },
-
-        async analyze() {
-          if (!this.file || this.loading) return;
-          this.loading = true;
-          this.error = null;
-          this.results = null;
-
-          try {
-            const fd = new FormData();
-            fd.append('file', this.file);
-            if (this.location) fd.append('location', this.location);
-            fd.append('bedrooms', this.bedrooms);
-
-            const res = await fetch('/api/analyze', { method: 'POST', body: fd });
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.detail || 'Analysis failed. Please try again.');
-            this.results = data;
-          } catch (err) {
-            this.error = err.message || 'Something went wrong. Please try again.';
-          } finally {
-            this.loading = false;
+    async init() {
+      const { data: { session } } = await _supa.auth.getSession();
+      if (session) {
+        this.supaSession = session;
+        this.user = session.user;
+        await this.checkSubscription();
+      }
+      _supa.auth.onAuthStateChange(async (_event, session) => {
+        this.supaSession = session;
+        this.user = session ? session.user : null;
+        if (session) {
+          await this.checkSubscription();
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('subscribed') === 'true') {
+            window.history.replaceState({}, '', '/');
           }
-        },
-
-        reset() {
-          this.file = null;
-          this.results = null;
-          this.error = null;
-          this.location = '';
-          this.bedrooms = '1';
-          if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+        } else {
+          this.subscribed = false;
         }
-      };
+      });
+    },
+
+    async checkSubscription() {
+      if (!this.supaSession) return;
+      this.loadingSubscription = true;
+      try {
+        const res = await fetch('/api/subscription-status', {
+          headers: { 'Authorization': 'Bearer ' + this.supaSession.access_token }
+        });
+        const data = await res.json();
+        this.subscribed = data.active;
+      } catch(e) {
+        this.subscribed = false;
+      }
+      this.loadingSubscription = false;
+    },
+
+    async submitAuth() {
+      this.authLoading = true;
+      this.authError = '';
+      this.authSuccess = '';
+      try {
+        let result;
+        if (this.authMode === 'signup') {
+          result = await _supa.auth.signUp({ email: this.authEmail, password: this.authPassword });
+          if (result.error) throw result.error;
+          if (result.data.user && !result.data.session) {
+            this.authSuccess = 'Check your email for a confirmation link!';
+            this.authLoading = false;
+            return;
+          }
+        } else {
+          result = await _supa.auth.signInWithPassword({ email: this.authEmail, password: this.authPassword });
+          if (result.error) throw result.error;
+        }
+        this.showAuth = false;
+        this.authEmail = '';
+        this.authPassword = '';
+      } catch(e) {
+        this.authError = e.message || 'Something went wrong. Please try again.';
+      }
+      this.authLoading = false;
+    },
+
+    async signOut() {
+      await _supa.auth.signOut();
+      this.user = null;
+      this.supaSession = null;
+      this.subscribed = false;
+      this.results = null;
+    },
+
+    async startCheckout() {
+      if (!this.user) { this.showAuth = true; return; }
+      try {
+        const res = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + this.supaSession.access_token }
+        });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } catch(e) {
+        alert('Could not start checkout. Please try again.');
+      }
+    },
+
+    handleFile(f) {
+      if (!f) return;
+      if (f.type !== 'application/pdf') { this.error = 'Please upload a PDF file.'; return; }
+      if (f.size > 20 * 1024 * 1024) { this.error = 'File must be under 20 MB.'; return; }
+      this.file = f;
+      this.error = '';
+      this.results = null;
+    },
+
+    handleDrop(e) {
+      this.isDragging = false;
+      const f = e.dataTransfer.files[0];
+      if (f) this.handleFile(f);
+    },
+
+    async handleAnalyze() {
+      if (!this.user) { this.showAuth = true; return; }
+      if (!this.subscribed) { await this.startCheckout(); return; }
+      await this.analyze();
+    },
+
+    async analyze() {
+      this.loading = true;
+      this.error = '';
+      this.results = null;
+      try {
+        const fd = new FormData();
+        fd.append('file', this.file);
+        if (this.location) fd.append('location', this.location);
+        fd.append('bedrooms', this.bedrooms);
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + this.supaSession.access_token },
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 402) { await this.startCheckout(); return; }
+          throw new Error(data.detail || 'Analysis failed.');
+        }
+        this.results = data;
+      } catch(e) {
+        this.error = e.message || 'Something went wrong. Please try again.';
+      }
+      this.loading = false;
+    },
+
+    reset() {
+      this.file = null;
+      this.results = null;
+      this.error = '';
+      this.location = '';
+      this.bedrooms = 1;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  </script>
+  };
+}
+</script>
 </body>
 </html>
