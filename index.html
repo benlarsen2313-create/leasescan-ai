@@ -4,386 +4,272 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LeaseScan AI — Know Before You Sign</title>
+  <meta name="description" content="Upload any residential lease — LeaseScan AI flags risky clauses, hidden fees, and tells you if you're overpaying for your area." />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
     [x-cloak] { display: none !important; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in { animation: fadeIn 0.45s ease both; }
-
-    @keyframes dashIn {
-      from { stroke-dashoffset: 283; }
-      to   { stroke-dashoffset: var(--dash-target); }
-    }
-    .gauge-arc { animation: dashIn 1.4s cubic-bezier(.4,0,.2,1) forwards; }
-
-    .drop-zone.dragging {
-      border-color: #3b82f6;
-      background-color: #eff6ff;
-    }
-
-    .severity-high   { background:#fee2e2; color:#991b1b; }
-    .severity-medium { background:#fef3c7; color:#92400e; }
-    .severity-low    { background:#d1fae5; color:#065f46; }
-
-    .verdict-overpriced { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
-    .verdict-deal       { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
-    .verdict-fair       { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
-
-    .rec-sign      { background:#d1fae5; color:#065f46; }
-    .rec-negotiate { background:#fef3c7; color:#92400e; }
-    .rec-avoid     { background:#fee2e2; color:#991b1b; }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .drop-zone.dragging { border-color: #3b82f6; background-color: #eff6ff; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .fade-in { animation: fadeIn 0.4s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800" x-data="leaseApp()" x-cloak>
 
-<body class="bg-slate-50 min-h-screen font-sans" x-data="leaseGuard()" x-cloak>
-
-  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════════ -->
-  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="bg-blue-600 text-white rounded-xl w-9 h-9 flex items-center justify-center font-bold text-lg">L</div>
-        <span class="font-semibold text-slate-800 text-lg tracking-tight">LeaseScan <span class="text-blue-600">AI</span></span>
-      </div>
-      <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Beta</span>
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">L</div>
+      <span class="font-semibold text-slate-800">LeaseScan <span class="text-blue-600">AI</span></span>
     </div>
-  </nav>
+    <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Beta</span>
+  </header>
 
-  <!-- ══ HERO (upload state) ═════════════════════════════════════════════════ -->
-  <main class="max-w-5xl mx-auto px-6 py-10">
+  <!-- Hero -->
+  <section class="text-center py-14 px-4">
+    <h1 class="text-4xl font-bold text-slate-900 mb-3">Know Before You Sign</h1>
+    <p class="text-slate-500 text-lg max-w-xl mx-auto">Upload any residential lease — LeaseScan AI flags risky clauses, hidden fees, and tells you if you're overpaying for your area.</p>
+  </section>
 
-    <!-- Upload / Configure Section -->
-    <template x-if="!results && !loading">
-      <div class="fade-in">
+  <!-- Main Card -->
+  <main class="max-w-4xl mx-auto px-4 pb-20">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+      <div class="grid md:grid-cols-5 gap-8">
 
-        <!-- Headline -->
-        <div class="text-center mb-10">
-          <h1 class="text-4xl font-bold text-slate-900 mb-3">Know Before You Sign</h1>
-          <p class="text-lg text-slate-500 max-w-xl mx-auto">
-            Upload any residential lease — LeaseScan AI flags risky clauses, hidden fees, and tells you if you're overpaying for your area.
-          </p>
-        </div>
+        <!-- Left: Upload + Options -->
+        <div class="md:col-span-3 space-y-5">
 
-        <!-- Error Banner -->
-        <template x-if="error">
-          <div class="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-4 flex items-start gap-3 fade-in">
-            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenode" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenode"/></svg>
-            <div>
-              <div class="font-semibold">Error</div>
-              <div class="text-sm mt-0.5" x-text="error"></div>
-            </div>
-            <button @click="error=null" class="ml-auto text-red-400 hover:text-red-600">✕</button>
-          </div>
-        </template>
+          <!-- Drop Zone -->
+          <div
+            class="drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50"
+            :class="{'dragging': isDragging}"
+            @dragover.prevent="isDragging=true"
+            @dragleave.prevent="isDragging=false"
+            @drop.prevent="handleDrop($event)"
+            @click="$refs.fileInput.click()"
+          >
+            <input type="file" accept=".pdf" class="hidden" x-ref="fileInput" @change="handleFileInput($event)" />
 
-        <div class="grid md:grid-cols-5 gap-6">
-
-          <!-- Left column: Upload + form -->
-          <div class="md:col-span-3 space-y-5">
-
-            <!-- Drop Zone -->
-            <div
-              class="drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50"
-              :class="{'dragging': isDragging}"
-              @dragover.prevent="isDragging=true"
-              @dragleave.prevent="isDragging=false"
-              @drop.prevent="handleDrop($event)"
-              @click="$refs.fileInput.click()"
-            >
-              <input type="file" accept=".pdf" class="hidden" x-ref="fileInput" @change="handleFileInput($event)" />
-
-              <template x-if="!file">
-                <div>
-                  <div class="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
-                    <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                  </div>
-                  <p class="text-slate-700 font-medium">Drop your lease PDF here</p>
-                  <p class="text-slate-400 text-sm mt-1">or click to browse</p>
-                  <p class="text-slate-300 text-xs mt-3">PDF files only · Max 20MB</p>
-                </div>
-              </template>
-
-      @dragleave.prevent="isDragging=false"
-              @drop.prevent="handleDrop($event)"
-              @click="$refs.fileInput.click()"
-            >
-              <input type="file" accept=".pdf" class="hidden" x-ref="fileInput" @change="handleFileInput($event)" />
-
-              <template x-if="!file">
-                <div>
-                  <div class="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
-                    <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                  </div>
-                  <p class="text-slate-700 font-medium">Drop your lease PDF here</p>
-                  <p class="text-slate-400 text-sm mt-1">or click to browse</p>
-                  <p class="text-slate-300 text-xs mt-3">PDF files only · Max 20MB</p>
-                </div>
-              </template>
-
-  0 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p class="text-xs text-slate-400 mt-1">For rent comparison</p>
-              </div>
+            <template x-if="!file">
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Bedrooms</label>
-                <select x-model="bedrooms" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                  <option value="unknown">Unknown</option>
-                  <option value="studio">Studio</option>
-                  <option value="1">1 Bedroom</option>
-                  <option value="2">2 Bedrooms</option>
-                  <option value="3">3 Bedrooms</option>
-                  <option value="4+">4+ Bedrooms</option>
-                </select>
+                <div class="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
+                  <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <p class="text-slate-700 font-medium">Drop your lease PDF here</p>
+                <p class="text-slate-400 text-sm mt-1">or click to browse</p>
+                <p class="text-slate-300 text-xs mt-3">PDF files only · Max 20MB</p>
               </div>
-            </div>
+            </template>
 
-            <!-- Analyze Button -->
-            <button
-              @click="analyze()"
-              :disabled="!file"
-              class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-2xl transition-all text-base shadow-sm shadow-blue-200 hover:shadow-md hover:shadow-blue-200"
-            >
-              Analyze My Lease →
-            </button>
-
+            <template x-if="file">
+              <div>
+                <div class="w-16 h-16 mx-auto mb-4 bg-green-50 rounded-2xl flex items-center justify-center">
+                  <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <p class="text-slate-700 font-medium" x-text="file.name"></p>
+                <p class="text-slate-400 text-sm mt-1" x-text="formatSize(file.size)"></p>
+                <p class="text-blue-500 text-xs mt-3 underline" @click.stop="clearFile()">Remove file</p>
+              </div>
+            </template>
           </div>
 
-          <!-- Right column: What we check -->
-          <div class="md:col-span-2">
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 h-full">
-              <h3 class="font-semibold text-slate-800 mb-4">What LeaseScan checks</h3>
-              <ul class="space-y-3 text-sm text-slate-600">
-                <template x-for="item in checkList" :key="item.label">
-                  <li class="flex items-start gap-3">
-                    <span class="text-lg leading-none" x-text="item.icon"></span>
-                    <div>
-                      <div class="font-medium text-slate-700" x-text="item.label"></div>
-                      <div class="text-slate-400 text-xs" x-text="item.desc"></div>
-                    </div>
-                  </li>
-                </template>
-              </ul>
-            </div>
+          <!-- Location input -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Your City / ZIP <span class="text-slate-400 font-normal">(for rent comparison)</span></label>
+            <input
+              type="text"
+              x-model="location"
+              placeholder="e.g. Austin, TX or 78701"
+              class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p class="text-xs text-slate-400 mt-1">For rent comparison</p>
           </div>
 
+          <!-- Bedrooms -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Bedrooms</label>
+            <select x-model="bedrooms" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              <option value="studio">Studio</option>
+              <option value="1" selected>1 Bedroom</option>
+              <option value="2">2 Bedrooms</option>
+              <option value="3">3 Bedrooms</option>
+              <option value="4+">4+ Bedrooms</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </template>
 
-    <!-- ══ LOADING STATE ══════════════════════════════════════════════════════ -->
-    <template x-if="loading">
-      <div class="fade-in flex flex-col items-center justify-center py-28 text-center">
-        <div class="relative w-20 h-20 mb-8">
-          <div class="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-          <div class="absolute inset-0 border-4 border-t-blue-600 rounded-full animate-spin"></div>
-          <div class="absolute inset-0 flex items-center justify-center text-2xl">🔍</div>
-        </div>
-        <h2 class="text-2xl font-bold text-slate-800 mb-2">Analyzing your lease…</h2>
-        <p class="text-slate-500 max-w-sm" x-text="loadingMessage"></p>
-        <div class="mt-6 flex gap-2">
-          <template x-for="dot in [1,2,3]" :key="dot">
-            <div class="w-2 h-2 rounded-full bg-blue-400 animate-bounce" :style="`animation-delay:${(dot-1)*0.2}s`"></div>
-          </template>
-        </div>
-      </div>
-    </template>
+        <!-- Right: Analyze Button + Info -->
+        <div class="md:col-span-2 flex flex-col justify-between gap-6">
+          <div class="bg-slate-50 rounded-2xl p-5 space-y-4">
+            <p class="text-sm font-semibold text-slate-700">What you'll get:</p>
+            <ul class="space-y-3">
+              <template x-for="item in features">
+                <li class="flex items-start gap-2 text-sm text-slate-600">
+                  <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                  <span x-text="item"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
 
-    <!-- ══ RESULTS ════════════════════════════════════════════════════════════ -->
-    <template x-if="results && !loading">
-      <div class="fade-in space-y-6">
-
-        <!-- Back Button -->
-        <button @click="reset()" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-          Analyze another lease
-        </button>
-
-        <!-- ── TOP ROW: Score + Summary ── -->
-        <div class="grid md:grid-cols-3 gap-5">
-
-          <!-- Risk Score Gauge -->
-          <div class="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col items-center">
-            <div class="text-sm font-medium text-slate-500 mb-4 uppercase tracking-wide">Risk Score</div>
-            <div class="relative w-36 h-36">
-              <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" stroke-width="10"/>
-                <circle
-                  cx="50" cy="50" r="45"
-                  fill="none"
-                  :stroke="gaugeColor"
-                  stroke-width="10"
-                  stroke-linecap="round"
-                  stroke-dasharray="283"
-                  :stroke-dashoffset="gaugeDashOffset"
-                  class="gauge-arc transition-all"
-                  :style="`--dash-target:${gaugeDashOffset}`"
-                />
+          <button
+            @click="analyze()"
+            :disabled="!file || loading"
+            class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl py-4 transition-colors flex items-center justify-center gap-2"
+          >
+            <template x-if="loading">
+              <svg class="spinner w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
               </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span class="text-3xl font-black" :style="`color:${gaugeColor}`" x-text="results.risk_score"></span>
-                <span class="text-xs text-slate-400">/100</span>
-              </div>
-            </div>
-            <div class="mt-3 text-sm font-semibold px-3 py-1 rounded-full" :class="riskLevelClass" x-text="results.risk_level || riskLabel"></div>
-          </div>
+            </template>
+            <span x-text="loading ? 'Analyzing...' : 'Analyze My Lease →'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
 
-          <!-- Summary + Recommendation -->
-          <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between">
-            <div>
-              <template x-if="results.property_address">
-                <p class="text-xs text-slate-400 mb-2 flex items-center gap-1">
-                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
-                  <span x-text="results.property_address"></span>
-                </p>
-              </template>
-              <p class="text-slate-700 leading-relaxed" x-text="results.summary"></p>
-            </div>
-            <div class="mt-5 flex flex-wrap gap-3">
-              <div class="text-sm px-4 py-2 rounded-xl font-semibold" :class="recommendationClass" x-text="results.overall_recommendation || '—'"></div>
-              <template x-if="results.monthly_rent">
-                <div class="text-sm px-4 py-2 rounded-xl bg-slate-100 text-slate-700">
-                  💰 <span x-text="`$${results.monthly_rent.toLocaleString()}/mo`"></span>
-                </div>
-              </template>
-              <template x-if="results.lease_term_months">
-                <div class="text-sm px-4 py-2 rounded-xl bg-slate-100 text-slate-700">
-                  📅 <span x-text="`${results.lease_term_months} months`"></span>
-                </div>
-              </template>
-            </div>
+    <!-- Error -->
+    <template x-if="error">
+      <div class="mt-6 bg-red-50 border border-red-200 rounded-2xl p-5 fade-in">
+        <p class="text-red-700 font-medium text-sm" x-text="error"></p>
+      </div>
+    </template>
+
+    <!-- Results -->
+    <template x-if="results">
+      <div class="mt-8 space-y-6 fade-in">
+
+        <!-- Score -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center gap-6">
+          <div class="shrink-0">
+            <div class="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold border-4"
+              :class="{
+                'border-green-400 bg-green-50 text-green-700': results.risk_score <= 3,
+                'border-yellow-400 bg-yellow-50 text-yellow-700': results.risk_score > 3 && results.risk_score <= 6,
+                'border-red-400 bg-red-50 text-red-700': results.risk_score > 6
+              }"
+              x-text="results.risk_score + '/10'"
+            ></div>
+          </div>
+          <div>
+            <p class="text-sm text-slate-500 mb-1">Overall Risk Score</p>
+            <p class="text-xl font-bold"
+              :class="{
+                'text-green-700': results.risk_score <= 3,
+                'text-yellow-700': results.risk_score > 3 && results.risk_score <= 6,
+                'text-red-700': results.risk_score > 6
+              }"
+              x-text="results.risk_score <= 3 ? 'Low Risk' : results.risk_score <= 6 ? 'Moderate Risk' : 'High Risk'"
+            ></p>
+            <p class="text-slate-500 text-sm mt-1" x-text="results.summary"></p>
           </div>
         </div>
 
-        <!-- ── PRICE COMPARISON ── -->
-        <template x-if="results.price_verdict && results.market_data">
-          <div class="border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 fade-in"
-               :class="priceVerdictClass">
-            <div class="text-3xl" x-text="priceVerdictIcon"></div>
-            <div class="flex-1">
-              <div class="font-bold text-base" x-text="results.price_verdict.message"></div>
-              <div class="text-sm opacity-80 mt-0.5" x-text="results.price_verdict.detail"></div>
-            </div>
-            <div class="text-right text-sm opacity-70">
-              <div>Market avg (AI est.)</div>
-              <div class="font-bold text-lg" x-text="`$${results.market_data.estimated_median_rent?.toLocaleString() || '—'}/mo`"></div>
-              <div class="text-xs" x-text="results.market_data.city_state || results.market_data.zip_code"></div>
-            </div>
+        <!-- Rent Comparison -->
+        <template x-if="results.rent_analysis">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+              Rent Comparison
+            </h2>
+            <p class="text-slate-600 text-sm" x-text="results.rent_analysis"></p>
           </div>
         </template>
 
-        <!-- ── FLAGGED CLAUSES ── -->
-        <template x-if="results.flagged_clauses && results.flagged_clauses.length">
-          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-                🚩 Flagged Clauses
-                <span class="text-sm font-normal text-slate-400" x-text="`(${results.flagged_clauses.length} found)`"></span>
-              </h2>
-              <div class="flex gap-2 text-xs">
-                <span class="severity-high px-2 py-0.5 rounded-full font-medium" x-text="`${highCount} High`"></span>
-                <span class="severity-medium px-2 py-0.5 rounded-full font-medium" x-text="`${medCount} Med`"></span>
-                <span class="severity-low px-2 py-0.5 rounded-full font-medium" x-text="`${lowCount} Low`"></span>
-              </div>
-            </div>
-            <div class="divide-y divide-slate-100">
-              <template x-for="(clause, i) in results.flagged_clauses" :key="clause.id || i">
-                <div class="px-6 py-4 hover:bg-slate-50 transition-colors">
-                  <div class="flex items-start justify-between gap-3 mb-2">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full" :class="`severity-${clause.severity}`" x-text="clause.severity.toUpperCase()"></span>
-                      <span class="text-sm font-medium text-slate-700" x-text="clause.category"></span>
-                    </div>
+        <!-- Risky Clauses -->
+        <template x-if="results.risky_clauses && results.risky_clauses.length">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              Risky Clauses
+            </h2>
+            <div class="space-y-4">
+              <template x-for="clause in results.risky_clauses" :key="clause.title">
+                <div class="bg-red-50 border border-red-100 rounded-xl p-4">
+                  <div class="flex items-center justify-between mb-1">
+                    <p class="font-medium text-red-800 text-sm" x-text="clause.title"></p>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                      :class="{
+                        'bg-red-100 text-red-700': clause.severity === 'high',
+                        'bg-yellow-100 text-yellow-700': clause.severity === 'medium',
+                        'bg-blue-100 text-blue-700': clause.severity === 'low'
+                      }"
+                      x-text="clause.severity"
+                    ></span>
                   </div>
-                  <template x-if="clause.clause_text">
-                    <blockquote class="text-xs text-slate-500 italic bg-slate-50 border-l-2 border-slate-300 px-3 py-2 rounded-r-lg mb-2 font-mono leading-relaxed" x-text="`"${clause.clause_text}"`"></blockquote>
+                  <p class="text-slate-600 text-sm" x-text="clause.explanation"></p>
+                  <template x-if="clause.quote">
+                    <p class="mt-2 text-xs text-slate-500 italic border-l-2 border-red-200 pl-3" x-text="'\"' + clause.quote + '\"'"></p>
                   </template>
-                  <p class="text-sm text-slate-700 mb-1" x-text="clause.explanation"></p>
-                  <p class="text-xs text-blue-600 font-medium flex items-start gap-1">
-                    <span>💡</span>
-                    <span x-text="clause.suggestion"></span>
-                  </p>
                 </div>
               </template>
             </div>
           </div>
         </template>
 
-        <!-- ── BOTTOM ROW: Negotiate + Positive + Missing ── -->
-        <div class="grid md:grid-cols-2 gap-5">
-
-          <!-- Negotiation Points -->
-          <template x-if="results.top_negotiation_points && results.top_negotiation_points.length">
-            <div class="bg-white rounded-2xl border border-slate-200 p-6">
-              <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                🤝 Top Negotiation Points
-              </h3>
-              <ol class="space-y-3">
-                <template x-for="(point, i) in results.top_negotiation_points" :key="i">
-                  <li class="flex gap-3 text-sm text-slate-700">
-                    <span class="bg-blue-100 text-blue-700 font-bold rounded-full w-5 h-5 flex-shrink-0 flex items-center justify-center text-xs" x-text="i+1"></span>
-                    <span x-text="point"></span>
-                  </li>
-                </template>
-              </ol>
+        <!-- Hidden Fees -->
+        <template x-if="results.hidden_fees && results.hidden_fees.length">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Hidden Fees
+            </h2>
+            <div class="space-y-3">
+              <template x-for="fee in results.hidden_fees" :key="fee.name">
+                <div class="flex items-start justify-between bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+                  <div>
+                    <p class="font-medium text-yellow-800 text-sm" x-text="fee.name"></p>
+                    <p class="text-slate-600 text-sm mt-0.5" x-text="fee.description"></p>
+                  </div>
+                  <template x-if="fee.amount">
+                    <span class="text-yellow-700 font-semibold text-sm ml-4 shrink-0" x-text="fee.amount"></span>
+                  </template>
+                </div>
+              </template>
             </div>
-          </template>
-
-          <!-- Right col: Positive + Missing -->
-          <div class="space-y-5">
-
-            <!-- Positive Clauses -->
-            <template x-if="results.positive_clauses && results.positive_clauses.length">
-              <div class="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">✅ Tenant-Friendly Clauses</h3>
-                <ul class="space-y-2">
-                  <template x-for="(pos, i) in results.positive_clauses" :key="i">
-                    <li class="flex gap-2 text-sm">
-                      <span class="text-green-500 font-bold flex-shrink-0">✓</span>
-                      <div>
-                        <span class="font-medium text-slate-700" x-text="pos.category + ': '"></span>
-                        <span class="text-slate-500" x-text="pos.explanation"></span>
-                      </div>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </template>
-
-            <!-- Missing Protections -->
-            <template x-if="results.missing_standard_protections && results.missing_standard_protections.length">
-              <div class="bg-amber-50 rounded-2xl border border-amber-200 p-6">
-                <h3 class="font-bold text-amber-900 mb-4 flex items-center gap-2">⚠️ Missing Protections</h3>
-                <ul class="space-y-2">
-                  <template x-for="(miss, i) in results.missing_standard_protections" :key="i">
-                    <li class="flex gap-2 text-sm text-amber-800">
-                      <span class="flex-shrink-0">•</span>
-                      <span x-text="miss"></span>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </template>
-
           </div>
+        </template>
 
-        </div>
+        <!-- Recommendations -->
+        <template x-if="results.recommendations && results.recommendations.length">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Recommendations
+            </h2>
+            <ul class="space-y-2">
+              <template x-for="rec in results.recommendations" :key="rec">
+                <li class="flex items-start gap-2 text-sm text-slate-600">
+                  <svg class="w-4 h-4 text-green-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span x-text="rec"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
 
-        <!-- Disclaimer -->
-        <div class="text-center text-xs text-slate-400 py-4 border-t border-slate-100">
-          LeaseScan AI is for informational purposes only and does not constitute legal advice.
-          Always consult a licensed attorney before signing a lease.
+        <!-- Analyze Another -->
+        <div class="text-center">
+          <button @click="reset()" class="text-blue-600 hover:text-blue-800 text-sm underline">Analyze another lease</button>
         </div>
 
       </div>
@@ -391,175 +277,86 @@
 
   </main>
 
+  <!-- Footer -->
+  <footer class="text-center text-xs text-slate-400 pb-10">
+    LeaseScan AI · Not legal advice · Always consult a professional
+  </footer>
 
-  <!-- ══ ALPINE.JS APP LOGIC ════════════════════════════════════════════════ -->
   <script>
-  function leaseGuard() {
-    return {
-      // ── State ──
-      file: null,
-      fileName: '',
-      zipCode: '',
-      bedrooms: 'unknown',
-      isDragging: false,
-      loading: false,
-      loadingMessage: 'Reading your lease…',
-      results: null,
-      error: null,
+    function leaseApp() {
+      return {
+        file: null,
+        location: '',
+        bedrooms: '1',
+        isDragging: false,
+        loading: false,
+        results: null,
+        error: null,
+        features: [
+          'Risky clause detection',
+          'Hidden fee breakdown',
+          'Rent vs. market comparison',
+          'Plain-English explanations',
+          'Negotiation tips'
+        ],
 
-      // ── Static data ──
-      checkList: [
-        { icon: '🚩', label: 'Risky Clauses',         desc: 'Early termination, auto-renewal, landlord entry' },
-        { icon: '💸', label: 'Hidden Fees',            desc: 'Escalating rent, penalty clauses, move-out costs' },
-        { icon: '🏠', label: 'Market Rent Comparison', desc: 'Is your rent fair for the area?' },
-        { icon: '🔒', label: 'Security Deposit Rules', desc: 'Unusual deposit amounts or conditions' },
-        { icon: '📋', label: 'Missing Protections',    desc: 'Standard clauses the landlord left out' },
-        { icon: '🤝', label: 'Negotiation Points',     desc: 'Specific items you should push back on' },
-      ],
+        handleDrop(e) {
+          this.isDragging = false;
+          const f = e.dataTransfer.files[0];
+          if (f && f.type === 'application/pdf') { this.file = f; this.error = null; }
+          else this.error = 'Please upload a PDF file.';
+        },
 
-      loadingMessages: [
-        'Reading your lease…',
-        'Scanning for risky clauses…',
-        'Checking hidden fees…',
-        'Analyzing security deposit terms…',
-        'Looking up market rent data…',
-        'Putting it all together…',
-      ],
+        handleFileInput(e) {
+          const f = e.target.files[0];
+          if (f) { this.file = f; this.error = null; }
+        },
 
-      // ── File Handling ──
-      handleDrop(e) {
-        this.isDragging = false;
-        const f = e.dataTransfer.files[0];
-        if (f) this.setFile(f);
-      },
-      handleFileInput(e) {
-        const f = e.target.files[0];
-        if (f) this.setFile(f);
-      },
-      setFile(f) {
-        if (!f.name.toLowerCase().endsWith('.pdf')) {
-          this.error = 'Please upload a PDF file.';
-          return;
-        }
-        if (f.size > 20 * 1024 * 1024) {
-          this.error = 'File is too large. Max 20MB.';
-          return;
-        }
-        this.file = f;
-        this.fileName = f.name;
-        this.error = null;
-      },
+        clearFile() {
+          this.file = null;
+          this.$refs.fileInput.value = '';
+        },
 
-      // ── Main Analyze Call ──
-      async analyze() {
-        if (!this.file || !this.openaiKey) return;
+        formatSize(bytes) {
+          if (bytes < 1024) return bytes + ' B';
+          if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+          return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        },
 
-        this.loading = true;
-        this.error = null;
-        this.results = null;
+        async analyze() {
+          if (!this.file || this.loading) return;
+          this.loading = true;
+          this.error = null;
+          this.results = null;
 
-        // Cycle loading messages
-        let msgIdx = 0;
-        const msgInterval = setInterval(() => {
-          msgIdx = (msgIdx + 1) % this.loadingMessages.length;
-          this.loadingMessage = this.loadingMessages[msgIdx];
-        }, 2200);
+          try {
+            const fd = new FormData();
+            fd.append('file', this.file);
+            if (this.location) fd.append('location', this.location);
+            fd.append('bedrooms', this.bedrooms);
 
-        try {
-          const formData = new FormData();
-          formData.append('file', this.file);
-          formData.append('zip_code', this.zipCode);
-          formData.append('bedrooms', this.bedrooms);
+            const res = await fetch('/api/analyze', { method: 'POST', body: fd });
+            const data = await res.json();
 
-          const response = await fetch('/api/analyze', {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.detail || 'Analysis failed. Please try again.');
+            if (!res.ok) throw new Error(data.detail || 'Analysis failed. Please try again.');
+            this.results = data;
+          } catch (err) {
+            this.error = err.message || 'Something went wrong. Please try again.';
+          } finally {
+            this.loading = false;
           }
+        },
 
-          this.results = data;
-        } catch (err) {
-          this.error = err.message;
-        } finally {
-          clearInterval(msgInterval);
-          this.loading = false;
+        reset() {
+          this.file = null;
+          this.results = null;
+          this.error = null;
+          this.location = '';
+          this.bedrooms = '1';
+          if (this.$refs.fileInput) this.$refs.fileInput.value = '';
         }
-      },
-
-      reset() {
-        this.results = null;
-        this.error = null;
-        this.file = null;
-        this.fileName = '';
-      },
-
-      // ── Computed: Gauge ──
-      get gaugeDashOffset() {
-        if (!this.results) return 283;
-        const score = Math.min(100, Math.max(0, this.results.risk_score));
-        return 283 - (283 * score) / 100;
-      },
-      get gaugeColor() {
-        if (!this.results) return '#94a3b8';
-        const s = this.results.risk_score;
-        if (s <= 30) return '#22c55e';
-        if (s <= 55) return '#f59e0b';
-        if (s <= 75) return '#f97316';
-        return '#ef4444';
-      },
-      get riskLabel() {
-        if (!this.results) return '';
-        const s = this.results.risk_score;
-        if (s <= 30) return 'Safe';
-        if (s <= 55) return 'Moderate';
-        if (s <= 75) return 'High Risk';
-        return 'Danger';
-      },
-      get riskLevelClass() {
-        if (!this.results) return '';
-        const s = this.results.risk_score;
-        if (s <= 30) return 'bg-green-100 text-green-800';
-        if (s <= 55) return 'bg-yellow-100 text-yellow-800';
-        if (s <= 75) return 'bg-orange-100 text-orange-800';
-        return 'bg-red-100 text-red-800';
-      },
-      get recommendationClass() {
-        if (!this.results?.overall_recommendation) return 'bg-slate-100 text-slate-700';
-        const rec = this.results.overall_recommendation;
-        if (rec.includes('Sign')) return 'rec-sign';
-        if (rec.includes('Negotiate')) return 'rec-negotiate';
-        return 'rec-avoid';
-      },
-
-      // ── Computed: Price Verdict ──
-      get priceVerdictClass() {
-        if (!this.results?.price_verdict) return '';
-        return `verdict-${this.results.price_verdict.status}`;
-      },
-      get priceVerdictIcon() {
-        if (!this.results?.price_verdict) return '';
-        const status = this.results.price_verdict.status;
-        return status === 'overpriced' ? '💸' : status === 'deal' ? '🎉' : '✅';
-      },
-
-      // ── Computed: Severity counts ──
-      get highCount() {
-        return this.results?.flagged_clauses?.filter(c => c.severity === 'high').length || 0;
-      },
-      get medCount() {
-        return this.results?.flagged_clauses?.filter(c => c.severity === 'medium').length || 0;
-      },
-      get lowCount() {
-        return this.results?.flagged_clauses?.filter(c => c.severity === 'low').length || 0;
-      },
-    };
-  }
+      };
+    }
   </script>
-
 </body>
 </html>
