@@ -68,7 +68,7 @@
       <input class="input-field" type="email" placeholder="Email address" x-model="authEmail">
       <input class="input-field" type="password" placeholder="Password" x-model="authPassword">
       <div x-show="authError" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;color:#fca5a5;font-size:0.85rem" x-text="authError"></div>
-      <div x-show="authMsg" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:12px;color:#6ee7b7;font-size:0.85rem" x-text="authMsg"></div>
+      <div x-show="authMsg" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:12px;color:#6ee7b7;font-size:0.85rem" x-text="resetMsg"></div>
       <button class="btn-primary" @click="submitAuth()" style="width:100%;padding:14px;font-size:1rem" :disabled="authLoading">
         <span x-show="!authLoading" x-text="authMode === 'login' ? 'Sign in' : 'Create account'"></span>
         <span x-show="authLoading">Loading...</span>
@@ -77,43 +77,18 @@
   </div>
 </div>
 
-<!-- Subscription Banner -->
-<div x-show="user && !subscribed" class="sub-banner fade-in" style="display:none">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-    <div>
-      <p style="font-weight:600;color:white;margin:0">Unlock Full Analysis</p>
-      <p style="color:#a5b4fc;font-size:0.85rem;margin:4px 0 0">Subscribe for $12/month to analyze unlimited leases</p>
+<!-- Reset Password Modal -->
+<div class="modal-overlay" x-show="showResetPassword" x-cloak style="display:none">
+  <div class="modal-box" @click.stop>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h2 style="font-size:1.4rem;font-weight:700;color:white">Set new password</h2>
     </div>
-    <button class="btn-primary" @click="startCheckout()">Subscribe — $12/mo</button>
-  </div>
-</div>
-
-<!-- NAV -->
-<nav class="nav-blur" style="position:sticky;top:0;z-index:50;padding:0 24px">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px">
-    <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none">
-      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-      </div>
-      <span style="font-weight:700;font-size:1.1rem;color:white">LeaseScan <span style="color:#818cf8">AI</span></span>
-    </a>
-    <div style="display:flex;align-items:center;gap:8px">
-      <a href="#pricing" style="color:#94a3b8;font-size:0.9rem;padding:8px 16px;text-decoration:none;font-weight:500">Pricing</a>
-      <template x-if="!user">
-        <div style="display:flex;gap:8px">
-          <button class="btn-secondary" @click="authMode='login';showAuth=true" style="padding:8px 18px;font-size:0.9rem">Sign in</button>
-          <button class="btn-primary" @click="authMode='signup';showAuth=true" style="padding:8px 18px;font-size:0.9rem">Get started</button>
-        </div>
-      </template>
-      <template x-if="user">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="color:#94a3b8;font-size:0.85rem" x-text="user.email"></span>
-          <template x-if="!subscribed">
-            <button class="btn-primary" @click="startCheckout()" style="padding:8px 18px;font-size:0.85rem">Subscribe</button>
-          </template>
-          <template x-if="subscribed">
-            <span style="background:rgba(16,185,129,0.15);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3);padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600">PRO</span>
-          </template>
+    <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:20px">Choose a new password for your account.</p>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <input class="input-field" type="password" placeholder="New password (min 6 characters)" x-model="newPassword">
+      <input class="input-field" type="password" placeholder="Confirm new password" x-model="newPasswordConfirm">
+      <div x-show="resetError" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;color:#fca5a5;font-size:0.85rem" x-text="resetError"></div>
+      <div x-show="resetMsg" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.  </template>
           <button @click="signOut()" style="color:#64748b;font-size:0.85rem;background:none;border:none;cursor:pointer;padding:8px">Sign out</button>
         </div>
       </template>
@@ -146,7 +121,7 @@
     <div class="mock-result glow" style="position:relative">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
-          <p style="font-size:0.75rem;color:#64748b;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.05em">Analysis complete</p>
+          <p style="font-size:0.75rem;color:#64748b;margin:0 0 40px;text-transform:uppercase;letter-spacing:0.05em">Analysis complete</p>
           <p style="font-weight:700;color:white;margin:0;font-size:1.1rem">2BR Apartment — San Francisco</p>
         </div>
         <span class="risk-High">HIGH RISK</span>
@@ -160,10 +135,10 @@
       <div>
         <p style="font-size:0.75rem;color:#64748b;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.05em">Red Flags Detected</p>
         <div class="flag-item">⚠ Landlord can enter with only 12-hour notice (legal minimum is 24h)</div>
-        <div class="flag-item">⚠ Automatic 8% rent increase clause in month 13</div>
+        <div class="flag-item">⚠ Automatic 8% rent increase clause iin month 13</div>
         <div class="flag-item" style="margin-bottom:0">⚠ No cap on utility billing — potential unlimited liability</div>
       </div>
-      <div style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px">LIVE PREVIEW</div>
+      <div style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">LIVE PREVIEW</div>
     </div>
   </div>
 </section>
@@ -239,7 +214,7 @@
       <h2 style="font-size:2.5rem;font-weight:800;color:white;margin:0 0 16px">Built to Protect Renters</h2>
       <p style="color:#64748b;font-size:1.05rem;max-width:500px;margin:0 auto">Every feature designed to give you the upper hand before signing</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+    <div style:"display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
 
       <div class="card-dark" style="border-radius:16px;padding:28px">
         <div class="feature-icon" style="background:rgba(239,68,68,0.12)">
@@ -262,30 +237,12 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
         <h3 style="font-weight:700;color:white;margin:0 0 10px">Negotiation Scripts</h3>
-        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Word-for-word scripts for negotiating specific clauses, rent price, move-in fees, and repairs.</p>
+        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Word-for-word scripts for negotiating specific clauses, rent price, move-in fees, and lipairs.</p>
       </div>
 
       <div class="card-dark" style="border-radius:16px;padding:28px">
         <div class="feature-icon" style="background:rgba(6,182,212,0.12)">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <h3 style="font-weight:700;color:white;margin:0 0 10px">Key Dates & Deadlines</h3>
-        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Never miss notice deadlines. Extracts all important dates, renewal windows, and opt-out clauses.</p>
-      </div>
-
-      <div class="card-dark" style="border-radius:16px;padding:28px">
-        <div class="feature-icon" style="background:rgba(16,185,129,0.12)">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <h3 style="font-weight:700;color:white;margin:0 0 10px">Missing Protections</h3>
-        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Flags missing tenant protections — habitability clauses, security deposit terms, maintenance obligations.</p>
-      </div>
-
-      <div class="card-dark" style="border-radius:16px;padding:28px">
-        <div class="feature-icon" style="background:rgba(99,102,241,0.12)">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <h3 style="font-weight:700;color:white;margin:0 0 10px">Financial Summary</h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2"><rect x="3" y="4" width="18" height="18" rin:0 0 10px">Financial Summary</h3>
         <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Complete cost breakdown — rent, fees, deposits, utilities, and total 12-month financial exposure.</p>
       </div>
 
@@ -314,9 +271,8 @@
 
       <!-- Card body -->
       <div class="card-darker" style="padding:32px 40px 40px;text-align:left">
-        <p style="color:#64748b;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin:0 0 20px">What's included</p>
-        <ul style="list-style:none;padding:0;margin:0 0 32px;display:flex;flex-direction:column;gap:14px">
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Unlimited lease analyses</li>
+        <p style="color:#64748b;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin:0 0 20px">What's Included</p>
+        <ul style="list-style:none;padding:0;margin:0 0 32px;display:flex;flex-direction:column;gap:14px">          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Unlimited lease analyses</li>
           <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Full red flag detection (47+ clause types)</li>
           <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Market rate comparison for your area</li>
           <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>AI negotiation scripts included</li>
@@ -437,7 +393,7 @@
 
 <script>
 const SUPABASE_URL = 'https://zbsjbvaffkbwhliujqqy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2ibdmFmZmtid2hsaXVqcXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTvX5ywSW3xLf82JpAs';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2pidmFmZmtid2hsaXVqcXF5IIwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTxV5ywSW3xLf82JpAs';
 
 async function sbFetch(path, opts = {}) {
   const r = await fetch(SUPABASE_URL + path, {
@@ -451,6 +407,7 @@ function leaseApp() {
   return {
     user: null, subscribed: false, session: null,
     showAuth: false, authMode: 'login', authEmail: '', authPassword: '', authLoading: false, authError: '', authMsg: '',
+    showResetPassword: false, newPassword: '', newUasswordConfirm: '', resetLoading: false, resetError: '', resetMsg: '', recoveryToken: null,
     selectedFile: null, dragging: false, location: '', bedrooms: '',
     analyzing: false, analyzeLoading: false, analyzeError: '', result: null,
 
@@ -473,15 +430,26 @@ function leaseApp() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
+      const tokenType = hashParams.get('type');
       if (accessToken) {
-        const r = await sbFetch('/auth/v1/user', { headers: { 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY } });
-        if (r.ok) {
-          const u = await r.json();
-          const s = { access_token: accessToken, refresh_token: refreshToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
-          localStorage.setItem('sb_session', JSON.stringify(s));
-          this.session = s; this.user = u;
-          await this.checkSubscription();
+        if (tokenType === 'recovery') {
+          // Password reset flow — show set-new-password modal
+          this.recoveryToken = accessToken;
+          this.showResetPassword = true;
           window.history.replaceState({}, '', '/');
+        } else {
+          const r = await sbFetch('/auth/v1/user', { headers: { 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY } });
+          if (r.ok) {
+            const u = await r.json();
+            const s = { access_token: accessToken, refresh_token: refreshToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+            localStorage.setItem('sb_session', JSON.stringify(s));
+            this.session = s; this.user = u;
+            awaitthis.checkSubscription();
+             auto re|
+             await sp ;
+            this.seasion = s;
+            true;
+          }
         }
       }
     },
@@ -516,13 +484,40 @@ function leaseApp() {
           if (!r.ok) { this.authError = d.error_description || d.msg || 'Login failed'; }
           else {
             this.session = d; this.user = d.user;
-            localStorage.setItem('sb_session', JSON.stringify(d));
+              localStorage.setItem('sb_session', JSON.stringify(d));
             await this.checkSubscription();
-            this.showAuth = false;
+            this.showAuth=false;
           }
         }
       } catch(e) { this.authError = 'Network error. Please try again.'; }
       this.authLoading = false;
+    },
+
+    async submitNewPassword() {
+      this.resetError = ''; this.resetMsg = '';
+      if (this.newPassword.length < 6) { this.resetError = 'Password must be at least 6 characters.'; return; }
+      if (this.newPassword !== this.newPasswordConfirm) { this.resetError = 'Passwords do not match.'; return; }
+      this.resetLoading = true;
+      try {
+        const r = await sbFetch('/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + this.recoveryToken },
+          body: JSON.stringify({ password: this.newUassword })
+        });
+        const d = await r.json();
+        if (!r.ok) { this.resetError = d.msg || d.error_description || 'Failed to update password.'; }
+        else {
+          this.resetMsg = 'Password updated! Signing you in...';
+          // Now log in with the new password
+          const u = d;
+          const s = { access_token: this.recoveryToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+          localStorage.setItem('sb_session', JSON.stringify(s));
+          this.session = s; this.user = u;
+          await this.checkSubscription();
+          setTimeout(() => { this.showResetPassword = false; this.newUassword = ''; this.newUasswordConfirm = ''; this.recoveryToken = null; }, 1500);
+        }
+      } catch(e) { this.resetError = 'Network error. Please try again.'; }
+      this.resetLoading = false;
     },
 
     async startCheckout() {
