@@ -1,13 +1,13 @@
 import os, io, json, re
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import pdfplumber
 from openai import OpenAI
 import httpx
 import stripe
 
-# ── Credentials ────────────────────────────────────────────────────────────────
+# ââ Credentials ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 OPENAI_API_KEY   = os.environ["OPENAI_API_KEY"]
 SUPABASE_URL     = os.environ.get("SUPABASE_URL", "https://zbsjbvaffkbwhliujqqy.supabase.co")
 SUPABASE_ANON    = os.environ.get("SUPABASE_ANON_KEY", "")
@@ -20,7 +20,7 @@ stripe.api_key = STRIPE_SECRET
 client = OpenAI(api_key=OPENAI_API_KEY)
 app = FastAPI()
 
-# ── Auth helper ────────────────────────────────────────────────────────────────
+# ââ Auth helper ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 async def get_user(request: Request) -> dict:
     """Verify Supabase JWT and return user dict, or raise 401."""
     auth = request.headers.get("Authorization", "")
@@ -57,7 +57,7 @@ async def require_active_subscription(user: dict = Depends(get_user)) -> dict:
 
     return user
 
-# ── Stripe Checkout ────────────────────────────────────────────────────────────
+# ââ Stripe Checkout ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(user: dict = Depends(get_user)):
     email = user.get("email", "")
@@ -81,7 +81,7 @@ async def subscription_status(user: dict = Depends(get_user)):
     subs = stripe.Subscription.list(customer=customer_id, status="active", limit=1)
     return {"active": bool(subs.data)}
 
-# ── Lease analysis (requires active subscription) ──────────────────────────────
+# ââ Lease analysis (requires active subscription) ââââââââââââââââââââââââââââââ
 @app.post("/api/analyze")
 async def analyze(
     file: UploadFile = File(...),
@@ -110,12 +110,12 @@ Analyze the following residential lease agreement and return a JSON object with 
 
 - "overall_risk": one of "Low", "Medium", "High"
 - "summary": 2-3 sentence plain-English overview
-- "red_flags": array of objects with "title" and "description" — clauses that are risky, unusual, or tenant-unfavorable
-- "good_clauses": array of objects with "title" and "description" — tenant-protective or fair clauses
-- "missing_clauses": array of strings — important protections that are absent
+- "red_flags": array of objects with "title" and "description" â clauses that are risky, unusual, or tenant-unfavorable
+- "good_clauses": array of objects with "title" and "description" â tenant-protective or fair clauses
+- "missing_clauses": array of strings â important protections that are absent
 - "market_comparison": 1-2 sentences comparing key terms to typical leases{' in ' + location if location else ''}
-- "negotiation_tips": array of strings — actionable advice for negotiating better terms
-- "key_dates": array of objects with "label" and "value" — important dates/deadlines
+- "negotiation_tips": array of strings â actionable advice for negotiating better terms
+- "key_dates": array of objects with "label" and "value" â important dates/deadlines
 - "financial_summary": object with "monthly_rent", "security_deposit", "late_fee", "other_fees"
 
 Lease text:
@@ -140,16 +140,16 @@ Return ONLY valid JSON, no markdown, no explanation."""
 
     return data
 
-# ── Health check ───────────────────────────────────────────────────────────────
+# ââ Health check âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
 
-# ── Serve frontend ─────────────────────────────────────────────────────────────
-@app.get("/", response_class=HTMLResponse)
+# ââ Serve frontend âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+@app.get("/")
 def index():
-    with open("index.html") as f:
-        return f.read()
+    with open("index.html", "rb") as f:
+        return Response(content=f.read(), media_type="text/html; charset=utf-8")
 
 @app.get("/robots.txt")
 def robots():
