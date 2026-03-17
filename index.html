@@ -98,7 +98,7 @@
 </div>
 
 <!-- Subscription Banner -->
-<div x-show="user && !subscribed" class="sub-banner fade-in" style="display:none">
+<div x-show="user && !subscribed && !promoApplied" class="sub-banner fade-in" style="display:none">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <p style="font-weight:600;color:white;margin:0">Unlock Full Analysis</p>
@@ -376,7 +376,7 @@
     </div>
 
     <!-- Subscribed — show analyzer -->
-    <div x-show="user && subscribed" style="display:none">
+    <div x-show="user && (subscribed || promoApplied)" style="display:none">
       <!-- Upload -->
       <div x-show="!analyzing && !result" class="card-dark" style="border-radius:16px;padding:32px">
         <div class="drop-zone" :class="{'drag-over':dragging}" @dragover.prevent="dragging=true" @dragleave="dragging=false" @drop.prevent="handleDrop($event)" @click="$refs.fileInput.click()">
