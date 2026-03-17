@@ -1,4 +1,4 @@
-import os, io, json, re
+import os, io, json, re, asyncio
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +15,7 @@ SUPABASE_SERVICE = os.environ.get("SUPABASE_SERVICE_KEY", "")
 STRIPE_SECRET    = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_ID  = os.environ.get("STRIPE_PRICE_ID", "")
 APP_URL          = os.environ.get("APP_URL", "https://www.leasescanai.com")
+RENTCAST_API_KEY = os.environ.get("RENTCAST_API_KEY", "")
 
 stripe.api_key = STRIPE_SECRET
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -137,6 +138,30 @@ Return ONLY valid JSON, no markdown, no explanation."""
         data = json.loads(raw)
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Failed to parse analysis response.")
+
+    # ── RentCast enrichment
+    if RENTCAST_API_KEY:
+        addr = data.get("street_address") or ""
+        zip_c = data.get("zip_code") or ""
+        if not zip_c:
+            m = re.search(r"\\b(\\d{5})\\b", text)
+            if m:
+                zip_c = m.group(1)
+        beds = data.get("bedrooms") or bedrooms or 1
+        rent_data = await get_rent_data(addr, zip_c, beds)
+        if rent_data:
+            data["rent_data"] = rent_data
+            lease_rent = data.get("monthly_rent")
+            est = rent_data.get("estimate") or rent_data.get("avg_rent")
+            if lease_rent and est:
+                diff = lease_rent - est
+                pct = round(abs(diff) / est * 100)
+                if diff > 50:
+                    data["rent_verdict"] = f"Your rent of ${lease_rent:,.0f}/mo is {pct}% above the market estimate of ${est:,.0f}/mo."
+                elif diff < -50:
+                    data["rent_verdict"] = f"Your rent of ${lease_rent:,.0f}/mo is {pct}% below the market estimate of ${est:,.0f}/mo — a good deal."
+                else:
+                    data["rent_verdict"] = f"Your rent of ${lease_rent:,.0f}/mo is in line with the market estimate of ${est:,.0f}/mo."
 
     return data
 
