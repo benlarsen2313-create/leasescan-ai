@@ -414,18 +414,781 @@
       </div>
 
       <!-- Results -->
-      <div x-show="result" class="fade-in">
-        <div class="card-dark" style="border-radius:16px;padding:32px;margin-bottom:20px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-            <div>
-              <h3 style="color:white;font-weight:700;font-size:1.3rem;margin:0 0 6px">Analysis Complete</h3>
-              <p style="color:#64748b;font-size:0.9rem;margin:0" x-text="location + (bedrooms ? ' · ' + bedrooms + ' BR' : '')"></p>
-            </div>
-            <span :class="'risk-' + (result ? result.risk_level : '')" x-text="result ? result.risk_level + ' Risk' : ''"></span>
+      <div x-show="result" class="fade-in" style="margin-top:8px">
+
+        <!-- Risk Banner -->
+        <div :class="'risk-' + (result && result.overall_risk ? result.overall_risk : 'Low')" style="border-radius:14px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:flex-start;gap:16px;border-width:1px;border-style:solid">
+          <div style="font-size:2rem;line-height:1;flex-shrink:0" x-text="result && result.overall_risk === 'High' ? '⚠️' : result && result.overall_risk === 'Medium' ? '⚡' : '✅'"></div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px" x-text="'Risk Level: ' + (result && result.overall_risk || '')"></div>
+            <div style="line-height:1.6;font-size:0.9rem;opacity:0.9" x-text="result && result.summary || ''"></div>
           </div>
-          <div style="white-space:pre-wrap;color:#cbd5e1;line-height:1.7;font-size:0.9rem" x-text="result ? result.analysis : ''"></div>
+          <button @click="reset()" class="btn-secondary" style="flex-shrink:0;padding:8px 14px;font-size:0.82rem">↩ New</button>
         </div>
-        <button @click="reset()" class="btn-secondary" style="width:100%;padding:12px">Analyze Another Lease</button>
+
+        <!-- Illegal Clauses -->
+        <template x-if="result && result.illegal_clauses && result.illegal_clauses.length > 0">
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.4);border-radius:14px;padding:22px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <span style="font-size:1.1rem">🚫</span>
+              <h3 style="margin:0;font-size:0.88rem;font-weight:700;color:#fca5a5;letter-spacing:0.06em;text-transform:uppercase">Potentially Illegal Clauses</h3>
+            </div>
+            <template x-for="c in (result ? result.illegal_clauses : [])" :key="c.title">
+              <div style="background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:8px">
+                <div style="font-weight:700;color:#fca5a5;margin-bottom:3px;font-size:0.9rem" x-text="c.title"></div>
+                <div style="font-size:0.85rem;color:#fecaca;margin-bottom:5px;line-height:1.5" x-text="c.description"></div>
+                <div style="font-size:0.76rem;color:#f87171;font-style:italic" x-text="'📜 ' + (c.law || '')"></div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Red Flags -->
+        <template x-if="result && result.red_flags && result.red_flags.length > 0">
+          <div style="background:rgba(30,27,75,0.5);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:22px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <span style="font-size:1.1rem">🚩</span>
+              <h3 style="margin:0;font-size:0.88rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Red Flags</h3>
+            </div>
+            <template x-for="f in (result ? result.red_flags : [])" :key="f.title">
+              <div class="flag-item" style="margin-bottom:8px">
+                <div style="font-weight:700;margin-bottom:3px" x-text="f.title"></div>
+                <div style="font-size:0.85rem;line-height:1.5;opacity:0.9" x-text="f.description"></div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Good Clauses + Missing Protections -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.25);border-radius:14px;padding:20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="font-size:1rem">✅</span>
+              <h3 style="margin:0;font-size:0.82rem;font-weight:700;color:#6ee7b7;letter-spacing:0.06em;text-transform:uppercase">Tenant-Friendly</h3>
+            </div>
+            <template x-for="c in (result ? result.good_clauses || [] : [])" :key="c.title">
+              <div style="border-left:3px solid #10b981;padding:8px 10px;margin-bottom:7px;border-radius:0 6px 6px 0;background:rgba(16,185,129,0.06)">
+                <div style="font-weight:600;color:#6ee7b7;font-size:0.83rem;margin-bottom:2px" x-text="c.title"></div>
+                <div style="font-size:0.8rem;color:#a7f3d0;line-height:1.4" x-text="c.description"></div>
+              </div>
+            </template>
+          </div>
+          <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="font-size:1rem">⚠️</span>
+              <h3 style="margin:0;font-size:0.82rem;font-weight:700;color:#fcd34d;letter-spacing:0.06em;text-transform:uppercase">Missing Protections</h3>
+            </div>
+            <template x-for="m in (result ? result.missing_clauses || [] : [])" :key="m">
+              <div style="display:flex;gap:7px;margin-bottom:7px;align-items:flex-start">
+                <span style="color:#f59e0b;flex-shrink:0;margin-top:1px">•</span>
+                <span style="font-size:0.83rem;color:#fde68a;line-height:1.4" x-text="m"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Negotiation Tips -->
+        <template x-if="result && result.negotiation_tips && result.negotiation_tips.length > 0">
+          <div style="background:rgba(30,27,75,0.5);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:22px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <span style="font-size:1.1rem">💬</span>
+              <h3 style="margin:0;font-size:0.88rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Negotiation Tips</h3>
+            </div>
+            <template x-for="(tip, idx) in (result ? result.negotiation_tips || [] : [])" :key="tip">
+              <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+                <span style="background:rgba(99,102,241,0.2);color:#a5b4fc;font-size:0.75rem;font-weight:700;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0" x-text="idx+1"></span>
+                <span style="font-size:0.85rem;color:#cbd5e1;line-height:1.5" x-text="tip"></span>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Key Dates + Financial Summary -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:rgba(30,27,75,0.5);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:20px" x-show="result && result.key_dates && result.key_dates.length > 0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="font-size:1rem">📅</span>
+              <h3 style="margin:0;font-size:0.82rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Key Dates</h3>
+            </div>
+            <template x-for="d in (result ? result.key_dates || [] : [])" :key="d.label">
+              <div class="saving-row"><span style="color:#94a3b8;font-size:0.83rem" x-text="d.label"></span><span style="color:#e2e8f0;font-weight:600;font-size:0.83rem" x-text="d.value"></span></div>
+            </template>
+          </div>
+          <div style="background:rgba(30,27,75,0.5);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:20px" x-show="result && result.monthly_rent">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="font-size:1rem">💰</span>
+              <h3 style="margin:0;font-size:0.82rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Financial Summary</h3>
+            </div>
+            <div class="saving-row"><span style="color:#94a3b8;font-size:0.83rem">Monthly Rent</span><span style="color:#e2e8f0;font-weight:700;font-size:0.9rem" x-text="result && result.monthly_rent ? '<!-- FOOTER -->
+<footer style="background:rgba(15,23,42,0.9);border-top:1px solid rgba(99,102,241,0.1);padding:48px 24px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <span style="font-weight:700;color:white">LeaseScan AI</span>
+      </div>
+      <p style="color:#475569;font-size:0.82rem;margin:0">AI-powered lease review for renters.</p>
+    </div>
+    <p style="color:#334155;font-size:0.8rem;margin:0">© 2026 LeaseScan AI. Not legal advice.</p>
+  </div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://zbsjbvaffkbwhliujqqy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2pidmFmZmtid2hsaXVqcXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTvX5ywSW3xLf82JpAs';
+
+async function sbFetch(path, opts = {}) {
+  const r = await fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json', ...opts.headers }
+  });
+  return r;
+}
+
+function leaseApp() {
+  return {
+    user: null, subscribed: false, session: null,
+    showAuth: false, authMode: 'login', authEmail: '', authPassword: '', authLoading: false, authError: '', authMsg: '',
+    showResetPassword: false, newPassword: '', newPasswordConfirm: '', resetLoading: false, resetError: '', resetMsg: '', recoveryToken: null,
+    selectedFile: null, dragging: false, location: '', bedrooms: '',
+    analyzing: false, analyzeLoading: false, analyzeError: '', result: null,
+
+    async init() {
+      const stored = localStorage.getItem('sb_session');
+      if (stored) {
+        try {
+          const s = JSON.parse(stored);
+          if (s.expires_at * 1000 > Date.now()) {
+            this.session = s;
+            this.user = s.user;
+            await this.checkSubscription();
+          } else {
+            localStorage.removeItem('sb_session');
+          }
+        } catch(e) {}
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('subscribed') === 'true') { this.subscribed = true; window.history.replaceState({}, '', '/'); }
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const tokenType = hashParams.get('type');
+      if (accessToken) {
+        if (tokenType === 'recovery') {
+          // Password reset flow — show set-new-password modal
+          this.recoveryToken = accessToken;
+          this.showResetPassword = true;
+          window.history.replaceState({}, '', '/');
+        } else {
+          const r = await sbFetch('/auth/v1/user', { headers: { 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY } });
+          if (r.ok) {
+            const u = await r.json();
+            const s = { access_token: accessToken, refresh_token: refreshToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+            localStorage.setItem('sb_session', JSON.stringify(s));
+            this.session = s; this.user = u;
+            await this.checkSubscription();
+            window.history.replaceState({}, '', '/');
+          }
+        }
+      }
+    },
+
+    async checkSubscription() {
+      if (!this.session) return;
+      try {
+        const r = await fetch('/api/subscription-status', { headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        if (r.ok) { const d = await r.json(); this.subscribed = d.active; }
+      } catch(e) {}
+    },
+
+    async submitAuth() {
+      this.authError = ''; this.authMsg = ''; this.authLoading = true;
+      try {
+        if (this.authMode === 'signup') {
+          const r = await sbFetch('/auth/v1/signup', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Sign up failed'; }
+          else { this.authMsg = 'Check your email to confirm your account!'; }
+        } else {
+          const r = await sbFetch('/auth/v1/token?grant_type=password', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Login failed'; }
+          else {
+            this.session = d; this.user = d.user;
+            localStorage.setItem('sb_session', JSON.stringify(d));
+            await this.checkSubscription();
+            this.showAuth = false;
+          }
+        }
+      } catch(e) { this.authError = 'Network error. Please try again.'; }
+      this.authLoading = false;
+    },
+
+    async submitNewPassword() {
+      this.resetError = ''; this.resetMsg = '';
+      if (this.newPassword.length < 6) { this.resetError = 'Password must be at least 6 characters.'; return; }
+      if (this.newPassword !== this.newPasswordConfirm) { this.resetError = 'Passwords do not match.'; return; }
+      this.resetLoading = true;
+      try {
+        const r = await sbFetch('/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + this.recoveryToken },
+          body: JSON.stringify({ password: this.newPassword })
+        });
+        const d = await r.json();
+        if (!r.ok) { this.resetError = d.msg || d.error_description || 'Failed to update password.'; }
+        else {
+          this.resetMsg = 'Password updated! Signing you in...';
+          // Now log in with the new password
+          const u = d;
+          const s = { access_token: this.recoveryToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+          localStorage.setItem('sb_session', JSON.stringify(s));
+          this.session = s; this.user = u;
+          await this.checkSubscription();
+          setTimeout(() => { this.showResetPassword = false; this.newPassword = ''; this.newPasswordConfirm = ''; this.recoveryToken = null; }, 1500);
+        }
+      } catch(e) { this.resetError = 'Network error. Please try again.'; }
+      this.resetLoading = false;
+    },
+
+    async startCheckout() {
+      if (!this.session) { this.showAuth = true; return; }
+      try {
+        const r = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        const d = await r.json();
+        if (d.url) window.location.href = d.url;
+      } catch(e) { alert('Could not start checkout. Please try again.'); }
+    },
+
+    signOut() {
+      this.user = null; this.session = null; this.subscribed = false;
+      localStorage.removeItem('sb_session');
+      this.result = null; this.selectedFile = null;
+    },
+
+    handleGetStarted() {
+      if (this.user) {
+        if (this.subscribed) { this.scrollToAnalyzer(); }
+        else { document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); }
+      } else {
+        this.authMode = 'signup'; this.showAuth = true;
+      }
+    },
+
+    scrollToAnalyzer() {
+      document.getElementById('analyzer').scrollIntoView({ behavior: 'smooth' });
+    },
+
+    handleDrop(e) {
+      this.dragging = false;
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') this.selectedFile = f;
+    },
+
+    handleFile(e) {
+      const f = e.target.files[0];
+      if (f) this.selectedFile = f;
+    },
+
+    async handleAnalyze() {
+      if (!this.selectedFile) return;
+      this.analyzeError = ''; this.analyzeLoading = true; this.analyzing = true;
+      await this.analyze();
+      this.analyzeLoading = false;
+    },
+
+    async analyze() {
+      try {
+        const fd = new FormData();
+        fd.append('file', this.selectedFile);
+        fd.append('location', this.location);
+        fd.append('bedrooms', this.bedrooms);
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token }, body: fd });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Analysis failed'); }
+        const d = await r.json();
+        this.result = d;
+      } catch(e) { this.analyzeError = e.message; }
+      this.analyzing = false;
+    },
+
+    reset() { this.result = null; this.selectedFile = null; this.analyzeError = ''; this.location = ''; this.bedrooms = ''; }
+  };
+}
+</script>
+</body>
+</html>
+ + Number(result.monthly_rent).toLocaleString() + '/mo' : ''"></span></div>
+            <div class="saving-row" x-show="result && result.financial_summary && result.financial_summary.security_deposit"><span style="color:#94a3b8;font-size:0.83rem">Security Deposit</span><span style="color:#e2e8f0;font-weight:600;font-size:0.83rem" x-text="result && result.financial_summary ? result.financial_summary.security_deposit : ''"></span></div>
+            <div class="saving-row" x-show="result && result.financial_summary && result.financial_summary.late_fee"><span style="color:#94a3b8;font-size:0.83rem">Late Fee</span><span style="color:#fca5a5;font-weight:600;font-size:0.83rem" x-text="result && result.financial_summary ? result.financial_summary.late_fee : ''"></span></div>
+          </div>
+        </div>
+
+        <!-- Market Comparison -->
+        <div style="background:rgba(30,27,75,0.5);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:20px;margin-bottom:14px" x-show="result && result.market_comparison">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span>📊</span>
+            <h3 style="margin:0;font-size:0.82rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Market Comparison</h3>
+          </div>
+          <p style="margin:0;font-size:0.88rem;color:#cbd5e1;line-height:1.6" x-text="result && result.market_comparison"></p>
+        </div>
+
+        <!-- Rent Market Intelligence -->
+        <template x-if="result && result.rent_data">
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(124,58,237,0.1));border:1px solid rgba(99,102,241,0.35);border-radius:14px;padding:24px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <span style="font-size:1.1rem">🏠</span>
+              <h3 style="margin:0;font-size:0.88rem;font-weight:700;color:#a5b4fc;letter-spacing:0.06em;text-transform:uppercase">Market Rent Intelligence</h3>
+            </div>
+            <div x-show="result && result.rent_verdict" style="background:rgba(99,102,241,0.15);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:0.88rem;color:#c7d2fe;line-height:1.5" x-text="result && result.rent_verdict"></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+              <div style="text-align:center;background:rgba(30,27,75,0.5);border-radius:10px;padding:12px" x-show="result && result.rent_data && result.rent_data.estimate">
+                <div style="font-size:1.25rem;font-weight:700;color:#e2e8f0" x-text="result && result.rent_data && result.rent_data.estimate ? '<!-- FOOTER -->
+<footer style="background:rgba(15,23,42,0.9);border-top:1px solid rgba(99,102,241,0.1);padding:48px 24px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <span style="font-weight:700;color:white">LeaseScan AI</span>
+      </div>
+      <p style="color:#475569;font-size:0.82rem;margin:0">AI-powered lease review for renters.</p>
+    </div>
+    <p style="color:#334155;font-size:0.8rem;margin:0">© 2026 LeaseScan AI. Not legal advice.</p>
+  </div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://zbsjbvaffkbwhliujqqy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2pidmFmZmtid2hsaXVqcXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTvX5ywSW3xLf82JpAs';
+
+async function sbFetch(path, opts = {}) {
+  const r = await fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json', ...opts.headers }
+  });
+  return r;
+}
+
+function leaseApp() {
+  return {
+    user: null, subscribed: false, session: null,
+    showAuth: false, authMode: 'login', authEmail: '', authPassword: '', authLoading: false, authError: '', authMsg: '',
+    showResetPassword: false, newPassword: '', newPasswordConfirm: '', resetLoading: false, resetError: '', resetMsg: '', recoveryToken: null,
+    selectedFile: null, dragging: false, location: '', bedrooms: '',
+    analyzing: false, analyzeLoading: false, analyzeError: '', result: null,
+
+    async init() {
+      const stored = localStorage.getItem('sb_session');
+      if (stored) {
+        try {
+          const s = JSON.parse(stored);
+          if (s.expires_at * 1000 > Date.now()) {
+            this.session = s;
+            this.user = s.user;
+            await this.checkSubscription();
+          } else {
+            localStorage.removeItem('sb_session');
+          }
+        } catch(e) {}
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('subscribed') === 'true') { this.subscribed = true; window.history.replaceState({}, '', '/'); }
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const tokenType = hashParams.get('type');
+      if (accessToken) {
+        if (tokenType === 'recovery') {
+          // Password reset flow — show set-new-password modal
+          this.recoveryToken = accessToken;
+          this.showResetPassword = true;
+          window.history.replaceState({}, '', '/');
+        } else {
+          const r = await sbFetch('/auth/v1/user', { headers: { 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY } });
+          if (r.ok) {
+            const u = await r.json();
+            const s = { access_token: accessToken, refresh_token: refreshToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+            localStorage.setItem('sb_session', JSON.stringify(s));
+            this.session = s; this.user = u;
+            await this.checkSubscription();
+            window.history.replaceState({}, '', '/');
+          }
+        }
+      }
+    },
+
+    async checkSubscription() {
+      if (!this.session) return;
+      try {
+        const r = await fetch('/api/subscription-status', { headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        if (r.ok) { const d = await r.json(); this.subscribed = d.active; }
+      } catch(e) {}
+    },
+
+    async submitAuth() {
+      this.authError = ''; this.authMsg = ''; this.authLoading = true;
+      try {
+        if (this.authMode === 'signup') {
+          const r = await sbFetch('/auth/v1/signup', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Sign up failed'; }
+          else { this.authMsg = 'Check your email to confirm your account!'; }
+        } else {
+          const r = await sbFetch('/auth/v1/token?grant_type=password', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Login failed'; }
+          else {
+            this.session = d; this.user = d.user;
+            localStorage.setItem('sb_session', JSON.stringify(d));
+            await this.checkSubscription();
+            this.showAuth = false;
+          }
+        }
+      } catch(e) { this.authError = 'Network error. Please try again.'; }
+      this.authLoading = false;
+    },
+
+    async submitNewPassword() {
+      this.resetError = ''; this.resetMsg = '';
+      if (this.newPassword.length < 6) { this.resetError = 'Password must be at least 6 characters.'; return; }
+      if (this.newPassword !== this.newPasswordConfirm) { this.resetError = 'Passwords do not match.'; return; }
+      this.resetLoading = true;
+      try {
+        const r = await sbFetch('/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + this.recoveryToken },
+          body: JSON.stringify({ password: this.newPassword })
+        });
+        const d = await r.json();
+        if (!r.ok) { this.resetError = d.msg || d.error_description || 'Failed to update password.'; }
+        else {
+          this.resetMsg = 'Password updated! Signing you in...';
+          // Now log in with the new password
+          const u = d;
+          const s = { access_token: this.recoveryToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+          localStorage.setItem('sb_session', JSON.stringify(s));
+          this.session = s; this.user = u;
+          await this.checkSubscription();
+          setTimeout(() => { this.showResetPassword = false; this.newPassword = ''; this.newPasswordConfirm = ''; this.recoveryToken = null; }, 1500);
+        }
+      } catch(e) { this.resetError = 'Network error. Please try again.'; }
+      this.resetLoading = false;
+    },
+
+    async startCheckout() {
+      if (!this.session) { this.showAuth = true; return; }
+      try {
+        const r = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        const d = await r.json();
+        if (d.url) window.location.href = d.url;
+      } catch(e) { alert('Could not start checkout. Please try again.'); }
+    },
+
+    signOut() {
+      this.user = null; this.session = null; this.subscribed = false;
+      localStorage.removeItem('sb_session');
+      this.result = null; this.selectedFile = null;
+    },
+
+    handleGetStarted() {
+      if (this.user) {
+        if (this.subscribed) { this.scrollToAnalyzer(); }
+        else { document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); }
+      } else {
+        this.authMode = 'signup'; this.showAuth = true;
+      }
+    },
+
+    scrollToAnalyzer() {
+      document.getElementById('analyzer').scrollIntoView({ behavior: 'smooth' });
+    },
+
+    handleDrop(e) {
+      this.dragging = false;
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') this.selectedFile = f;
+    },
+
+    handleFile(e) {
+      const f = e.target.files[0];
+      if (f) this.selectedFile = f;
+    },
+
+    async handleAnalyze() {
+      if (!this.selectedFile) return;
+      this.analyzeError = ''; this.analyzeLoading = true; this.analyzing = true;
+      await this.analyze();
+      this.analyzeLoading = false;
+    },
+
+    async analyze() {
+      try {
+        const fd = new FormData();
+        fd.append('file', this.selectedFile);
+        fd.append('location', this.location);
+        fd.append('bedrooms', this.bedrooms);
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token }, body: fd });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Analysis failed'); }
+        const d = await r.json();
+        this.result = d;
+      } catch(e) { this.analyzeError = e.message; }
+      this.analyzing = false;
+    },
+
+    reset() { this.result = null; this.selectedFile = null; this.analyzeError = ''; this.location = ''; this.bedrooms = ''; }
+  };
+}
+</script>
+</body>
+</html>
+ + Number(result.rent_data.estimate).toLocaleString() : ''"></div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:3px">Est. Market Rent</div>
+              </div>
+              <div style="text-align:center;background:rgba(30,27,75,0.5);border-radius:10px;padding:12px" x-show="result && result.rent_data && result.rent_data.avg_rent">
+                <div style="font-size:1.25rem;font-weight:700;color:#e2e8f0" x-text="result && result.rent_data && result.rent_data.avg_rent ? '<!-- FOOTER -->
+<footer style="background:rgba(15,23,42,0.9);border-top:1px solid rgba(99,102,241,0.1);padding:48px 24px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <span style="font-weight:700;color:white">LeaseScan AI</span>
+      </div>
+      <p style="color:#475569;font-size:0.82rem;margin:0">AI-powered lease review for renters.</p>
+    </div>
+    <p style="color:#334155;font-size:0.8rem;margin:0">© 2026 LeaseScan AI. Not legal advice.</p>
+  </div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://zbsjbvaffkbwhliujqqy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpic2pidmFmZmtid2hsaXVqcXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODUxNTQsImV4cCI6MjA4OTI2MTE1NH0.qHBzEij9OX8P_7P1qYWx7xv5aTvX5ywSW3xLf82JpAs';
+
+async function sbFetch(path, opts = {}) {
+  const r = await fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json', ...opts.headers }
+  });
+  return r;
+}
+
+function leaseApp() {
+  return {
+    user: null, subscribed: false, session: null,
+    showAuth: false, authMode: 'login', authEmail: '', authPassword: '', authLoading: false, authError: '', authMsg: '',
+    showResetPassword: false, newPassword: '', newPasswordConfirm: '', resetLoading: false, resetError: '', resetMsg: '', recoveryToken: null,
+    selectedFile: null, dragging: false, location: '', bedrooms: '',
+    analyzing: false, analyzeLoading: false, analyzeError: '', result: null,
+
+    async init() {
+      const stored = localStorage.getItem('sb_session');
+      if (stored) {
+        try {
+          const s = JSON.parse(stored);
+          if (s.expires_at * 1000 > Date.now()) {
+            this.session = s;
+            this.user = s.user;
+            await this.checkSubscription();
+          } else {
+            localStorage.removeItem('sb_session');
+          }
+        } catch(e) {}
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('subscribed') === 'true') { this.subscribed = true; window.history.replaceState({}, '', '/'); }
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const tokenType = hashParams.get('type');
+      if (accessToken) {
+        if (tokenType === 'recovery') {
+          // Password reset flow — show set-new-password modal
+          this.recoveryToken = accessToken;
+          this.showResetPassword = true;
+          window.history.replaceState({}, '', '/');
+        } else {
+          const r = await sbFetch('/auth/v1/user', { headers: { 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY } });
+          if (r.ok) {
+            const u = await r.json();
+            const s = { access_token: accessToken, refresh_token: refreshToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+            localStorage.setItem('sb_session', JSON.stringify(s));
+            this.session = s; this.user = u;
+            await this.checkSubscription();
+            window.history.replaceState({}, '', '/');
+          }
+        }
+      }
+    },
+
+    async checkSubscription() {
+      if (!this.session) return;
+      try {
+        const r = await fetch('/api/subscription-status', { headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        if (r.ok) { const d = await r.json(); this.subscribed = d.active; }
+      } catch(e) {}
+    },
+
+    async submitAuth() {
+      this.authError = ''; this.authMsg = ''; this.authLoading = true;
+      try {
+        if (this.authMode === 'signup') {
+          const r = await sbFetch('/auth/v1/signup', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Sign up failed'; }
+          else { this.authMsg = 'Check your email to confirm your account!'; }
+        } else {
+          const r = await sbFetch('/auth/v1/token?grant_type=password', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY },
+            body: JSON.stringify({ email: this.authEmail, password: this.authPassword })
+          });
+          const d = await r.json();
+          if (!r.ok) { this.authError = d.error_description || d.msg || 'Login failed'; }
+          else {
+            this.session = d; this.user = d.user;
+            localStorage.setItem('sb_session', JSON.stringify(d));
+            await this.checkSubscription();
+            this.showAuth = false;
+          }
+        }
+      } catch(e) { this.authError = 'Network error. Please try again.'; }
+      this.authLoading = false;
+    },
+
+    async submitNewPassword() {
+      this.resetError = ''; this.resetMsg = '';
+      if (this.newPassword.length < 6) { this.resetError = 'Password must be at least 6 characters.'; return; }
+      if (this.newPassword !== this.newPasswordConfirm) { this.resetError = 'Passwords do not match.'; return; }
+      this.resetLoading = true;
+      try {
+        const r = await sbFetch('/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + this.recoveryToken },
+          body: JSON.stringify({ password: this.newPassword })
+        });
+        const d = await r.json();
+        if (!r.ok) { this.resetError = d.msg || d.error_description || 'Failed to update password.'; }
+        else {
+          this.resetMsg = 'Password updated! Signing you in...';
+          // Now log in with the new password
+          const u = d;
+          const s = { access_token: this.recoveryToken, user: u, expires_at: Math.floor(Date.now()/1000) + 3600 };
+          localStorage.setItem('sb_session', JSON.stringify(s));
+          this.session = s; this.user = u;
+          await this.checkSubscription();
+          setTimeout(() => { this.showResetPassword = false; this.newPassword = ''; this.newPasswordConfirm = ''; this.recoveryToken = null; }, 1500);
+        }
+      } catch(e) { this.resetError = 'Network error. Please try again.'; }
+      this.resetLoading = false;
+    },
+
+    async startCheckout() {
+      if (!this.session) { this.showAuth = true; return; }
+      try {
+        const r = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token } });
+        const d = await r.json();
+        if (d.url) window.location.href = d.url;
+      } catch(e) { alert('Could not start checkout. Please try again.'); }
+    },
+
+    signOut() {
+      this.user = null; this.session = null; this.subscribed = false;
+      localStorage.removeItem('sb_session');
+      this.result = null; this.selectedFile = null;
+    },
+
+    handleGetStarted() {
+      if (this.user) {
+        if (this.subscribed) { this.scrollToAnalyzer(); }
+        else { document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' }); }
+      } else {
+        this.authMode = 'signup'; this.showAuth = true;
+      }
+    },
+
+    scrollToAnalyzer() {
+      document.getElementById('analyzer').scrollIntoView({ behavior: 'smooth' });
+    },
+
+    handleDrop(e) {
+      this.dragging = false;
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') this.selectedFile = f;
+    },
+
+    handleFile(e) {
+      const f = e.target.files[0];
+      if (f) this.selectedFile = f;
+    },
+
+    async handleAnalyze() {
+      if (!this.selectedFile) return;
+      this.analyzeError = ''; this.analyzeLoading = true; this.analyzing = true;
+      await this.analyze();
+      this.analyzeLoading = false;
+    },
+
+    async analyze() {
+      try {
+        const fd = new FormData();
+        fd.append('file', this.selectedFile);
+        fd.append('location', this.location);
+        fd.append('bedrooms', this.bedrooms);
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token }, body: fd });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Analysis failed'); }
+        const d = await r.json();
+        this.result = d;
+      } catch(e) { this.analyzeError = e.message; }
+      this.analyzing = false;
+    },
+
+    reset() { this.result = null; this.selectedFile = null; this.analyzeError = ''; this.location = ''; this.bedrooms = ''; }
+  };
+}
+</script>
+</body>
+</html>
+ + Number(result.rent_data.avg_rent).toLocaleString() : ''"></div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:3px">ZIP Avg Rent</div>
+              </div>
+              <div style="text-align:center;background:rgba(30,27,75,0.5);border-radius:10px;padding:12px" x-show="result && result.rent_data && result.rent_data.yoy_change != null">
+                <div style="font-size:1.25rem;font-weight:700" :style="'color:' + (result && result.rent_data && result.rent_data.yoy_change >= 0 ? '#f87171' : '#6ee7b7')" x-text="result && result.rent_data && result.rent_data.yoy_change != null ? (result.rent_data.yoy_change >= 0 ? '+' : '') + (result.rent_data.yoy_change * 100).toFixed(1) + '%' : ''"></div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:3px">YoY Rent Change</div>
+              </div>
+              <div style="text-align:center;background:rgba(30,27,75,0.5);border-radius:10px;padding:12px" x-show="result && result.rent_data && result.rent_data.vacancy_rate != null">
+                <div style="font-size:1.25rem;font-weight:700;color:#e2e8f0" x-text="result && result.rent_data && result.rent_data.vacancy_rate != null ? (result.rent_data.vacancy_rate * 100).toFixed(1) + '%' : ''"></div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:3px">Vacancy Rate</div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <button @click="reset()" class="btn-secondary" style="width:100%;padding:13px;font-size:0.92rem;border-radius:10px;margin-top:6px">↩ Analyze Another Lease</button>
+
       </div>
     </div>
   </div>
