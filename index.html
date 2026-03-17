@@ -400,6 +400,16 @@
           </div>
         </div>
         <div x-show="analyzeError" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;color:#fca5a5;font-size:0.85rem" x-text="analyzeError"></div>
+        <div style="margin-bottom:12px">
+          <div x-show="!promoApplied" style="display:flex;gap:8px;align-items:center">
+            <input x-model="promoCode" type="text" placeholder="Have a promo code?" class="input-field" style="flex:1;padding:10px 14px;font-size:0.85rem" @keydown.enter="promoCode.toLowerCase()==='freescan' && (promoApplied=true)" />
+            <button @click="promoApplied = promoCode.toLowerCase() === 'freescan'" class="btn-secondary" style="padding:10px 16px;font-size:0.85rem;white-space:nowrap" :disabled="!promoCode">Apply</button>
+          </div>
+          <div x-show="promoApplied" style="display:flex;align-items:center;gap:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#6ee7b7">
+            <span>✓</span> <span>Promo code applied — enjoy free access!</span>
+            <button @click="promoApplied=false;promoCode=''" style="margin-left:auto;background:none;border:none;color:#6ee7b7;cursor:pointer;font-size:0.85rem;opacity:0.7">× Remove</button>
+          </div>
+        </div>
         <button class="btn-primary" @click="handleAnalyze()" :disabled="!selectedFile || analyzeLoading" style="width:100%;margin-top:20px;padding:14px;font-size:1rem">
           <span x-show="!analyzeLoading">Analyze Lease</span>
           <span x-show="analyzeLoading">Analyzing...</span>
@@ -553,7 +563,7 @@ function leaseApp() {
     showAuth: false, authMode: 'login', authEmail: '', authPassword: '', authLoading: false, authError: '', authMsg: '',
     showResetPassword: false, newPassword: '', newPasswordConfirm: '', resetLoading: false, resetError: '', resetMsg: '', recoveryToken: null,
     selectedFile: null, dragging: false, location: '', bedrooms: '',
-    analyzing: false, analyzeLoading: false, analyzeError: '', result: null,
+    analyzing: false, analyzeLoading: false, analyzeError: '', result: null, promoCode: '', promoApplied: false,
 
     async init() {
       const stored = localStorage.getItem('sb_session');
@@ -713,7 +723,7 @@ function leaseApp() {
         fd.append('file', this.selectedFile);
         fd.append('location', this.location);
         fd.append('bedrooms', this.bedrooms);
-        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token }, body: fd });
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.session.access_token, ...(this.promoApplied ? {'X-Promo-Code': 'freescan'} : {}) }, body: fd });
         if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Analysis failed'); }
         const d = await r.json();
         this.result = d;
