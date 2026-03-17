@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LeaseScan AI â Know Before You Sign</title>
+<title>LeaseScan AI — Know Before You Sign</title>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <style>
@@ -33,7 +33,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .stat-card { background: rgba(30,27,75,0.5); border: 1px solid rgba(99,102,241,0.2); border-radius: 16px; padding: 24px; text-align: center; }
   .step-number { font-size: 4rem; font-weight: 900; color: rgba(99,102,241,0.15); line-height: 1; margin-bottom: -8px; }
-  .check-item::before { content: "â"; color: #818cf8; font-weight: 700; margin-right: 8px; }
+  .check-item::before { content: "✓"; color: #818cf8; font-weight: 700; margin-right: 8px; }
   .drop-zone { border: 2px dashed rgba(99,102,241,0.4); border-radius: 12px; padding: 48px 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
   .drop-zone:hover, .drop-zone.drag-over { border-color: #6366f1; background: rgba(99,102,241,0.05); }
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; }
@@ -58,7 +58,7 @@
   <div class="modal-box" @click.stop>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
       <h2 style="font-size:1.4rem;font-weight:700;color:white" x-text="authMode === 'login' ? 'Welcome back' : 'Create account'"></h2>
-      <button @click="showAuth = false" style="color:#64748b;font-size:1.5rem;background:none;border:none;cursor:pointer">Ã</button>
+      <button @click="showAuth = false" style="color:#64748b;font-size:1.5rem;background:none;border:none;cursor:pointer">×</button>
     </div>
     <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid rgba(99,102,241,0.2)">
       <button @click="authMode='login'" :class="authMode==='login' ? 'tab-active' : 'tab-inactive'" style="flex:1;padding:10px;background:none;border:none;cursor:pointer;font-weight:600;font-size:0.95rem;transition:all 0.2s">Sign in</button>
@@ -104,7 +104,7 @@
       <p style="font-weight:600;color:white;margin:0">Unlock Full Analysis</p>
       <p style="color:#a5b4fc;font-size:0.85rem;margin:4px 0 0">Subscribe for $12/month to analyze unlimited leases</p>
     </div>
-    <button class="btn-primary" @click="startCheckout()">Subscribe â $12/mo</button>
+    <button class="btn-primary" @click="startCheckout()">Subscribe — $12/mo</button>
   </div>
 </div>
 
@@ -130,6 +130,7 @@
         <button @click="signOut()" style="color:#64748b;font-size:0.85rem;background:none;border:none;cursor:pointer;padding:8px">Sign out</button>
       </div>
     </div>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -142,7 +143,7 @@
         Know Before<br><span class="gradient-text">You Sign</span>
       </h1>
       <p style="color:#94a3b8;font-size:1.15rem;line-height:1.7;margin:0 0 36px;max-width:480px">
-        Upload your lease agreement and get a full AI analysis in seconds â red flags, hidden costs, market rate comparison, and negotiation scripts.
+        Upload your lease agreement and get a full AI analysis in seconds — red flags, hidden costs, market rate comparison, and negotiation scripts.
       </p>
       <div style="display:flex;gap:16px;flex-wrap:wrap">
         <button class="btn-primary" @click="handleGetStarted()" style="padding:14px 32px;font-size:1rem">
@@ -150,7 +151,7 @@
         </button>
         <a href="#how-it-works" class="btn-outline" style="display:inline-block;text-decoration:none;padding:14px 32px;font-size:1rem">See how it works</a>
       </div>
-      <p style="color:#475569;font-size:0.82rem;margin:16px 0 0">No credit card required to start â¢ Cancel anytime</p>
+      <p style="color:#475569;font-size:0.82rem;margin:16px 0 0">No credit card required to start • Cancel anytime</p>
     </div>
 
     <!-- Mock result preview -->
@@ -158,7 +159,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
           <p style="font-size:0.75rem;color:#64748b;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.05em">Analysis complete</p>
-          <p style="font-weight:700;color:white;margin:0;font-size:1.1rem">2BR Apartment â San Francisco</p>
+          <p style="font-weight:700;color:white;margin:0;font-size:1.1rem">2BR Apartment — San Francisco</p>
         </div>
         <span class="risk-High">HIGH RISK</span>
       </div>
@@ -170,9 +171,9 @@
       </div>
       <div>
         <p style="font-size:0.75rem;color:#64748b;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.05em">Red Flags Detected</p>
-        <div class="flag-item">â  Landlord can enter with only 12-hour notice (legal minimum is 24h)</div>
-        <div class="flag-item">â  Automatic 8% rent increase clause in month 13</div>
-        <div class="flag-item" style="margin-bottom:0">â  No cap on utility billing â potential unlimited liability</div>
+        <div class="flag-item">⚠ Landlord can enter with only 12-hour notice (legal minimum is 24h)</div>
+        <div class="flag-item">⚠ Automatic 8% rent increase clause in month 13</div>
+        <div class="flag-item" style="margin-bottom:0">⚠ No cap on utility billing — potential unlimited liability</div>
       </div>
       <div style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px">LIVE PREVIEW</div>
     </div>
@@ -217,7 +218,7 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </div>
         <h3 style="font-weight:700;color:white;margin:0 0 12px;font-size:1.2rem">Upload Your Lease</h3>
-        <p style="color:#64748b;line-height:1.6;margin:0">Drop your PDF lease agreement. We accept any residential lease format â apartment, house, condo.</p>
+        <p style="color:#64748b;line-height:1.6;margin:0">Drop your PDF lease agreement. We accept any residential lease format — apartment, house, condo.</p>
       </div>
 
       <div class="card-dark" style="border-radius:16px;padding:32px;position:relative">
@@ -235,7 +236,7 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 0 2-2h11"/></svg>
         </div>
         <h3 style="font-weight:700;color:white;margin:0 0 12px;font-size:1.2rem">Get Your Report</h3>
-        <p style="color:#64748b;line-height:1.6;margin:0">Receive a full breakdown â risk score, red flags, negotiation scripts, and a list of what to ask for.</p>
+        <p style="color:#64748b;line-height:1.6;margin:0">Receive a full breakdown — risk score, red flags, negotiation scripts, and a list of what to ask for.</p>
       </div>
 
     </div>
@@ -289,7 +290,7 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h3 style="font-weight:700;color:white;margin:0 0 10px">Missing Protections</h3>
-        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Flags missing tenant protections â habitability clauses, security deposit terms, maintenance obligations.</p>
+        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Flags missing tenant protections — habitability clauses, security deposit terms, maintenance obligations.</p>
       </div>
 
       <div class="card-dark" style="border-radius:16px;padding:28px">
@@ -297,7 +298,7 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </div>
         <h3 style="font-weight:700;color:white;margin:0 0 10px">Financial Summary</h3>
-        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Complete cost breakdown â rent, fees, deposits, utilities, and total 12-month financial exposure.</p>
+        <p style="color:#64748b;font-size:0.9rem;line-height:1.6;margin:0">Complete cost breakdown — rent, fees, deposits, utilities, and total 12-month financial exposure.</p>
       </div>
 
     </div>
@@ -327,21 +328,21 @@
       <div class="card-darker" style="padding:32px 40px 40px;text-align:left">
         <p style="color:#64748b;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin:0 0 20px">What's included</p>
         <ul style="list-style:none;padding:0;margin:0 0 32px;display:flex;flex-direction:column;gap:14px">
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Unlimited lease analyses</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Full red flag detection (47+ clause types)</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Market rate comparison for your area</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>AI negotiation scripts included</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Key dates & deadlines extraction</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Complete financial cost breakdown</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Missing protections checklist</li>
-          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">â</span>Priority email support</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Unlimited lease analyses</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Full red flag detection (47+ clause types)</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Market rate comparison for your area</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>AI negotiation scripts included</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Key dates & deadlines extraction</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Complete financial cost breakdown</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Missing protections checklist</li>
+          <li style="color:#e2e8f0;font-size:0.95rem"><span class="pricing-check">✓</span>Priority email support</li>
         </ul>
         <button class="btn-primary" @click="handleGetStarted()" style="width:100%;padding:16px;font-size:1.05rem;border-radius:10px">
-          Get Started â $12/month
+          Get Started — $12/month
         </button>
         <div style="margin-top:20px;padding:16px;background:rgba(99,102,241,0.08);border-radius:10px;border:1px solid rgba(99,102,241,0.15)">
           <p style="color:#64748b;font-size:0.82rem;margin:0;text-align:center">
-            ð¡ A single attorney lease review costs <strong style="color:#94a3b8">$300â$500</strong>. LeaseScan AI covers you all year for less than one hour of legal fees.
+            💡 A single attorney lease review costs <strong style="color:#94a3b8">$300–$500</strong>. LeaseScan AI covers you all year for less than one hour of legal fees.
           </p>
         </div>
       </div>
@@ -370,11 +371,11 @@
     <div x-show="user && !subscribed" class="card-dark" style="border-radius:16px;padding:48px;text-align:center;display:none">
       <svg style="margin:0 auto 16px;display:block" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <h3 style="color:white;font-weight:700;margin:0 0 8px;font-size:1.2rem">Subscribe to start analyzing</h3>
-      <p style="color:#64748b;margin:0 0 24px;font-size:0.9rem">$12/month â cancel anytime</p>
-      <button class="btn-primary" @click="startCheckout()" style="padding:12px 32px;font-size:1rem">Subscribe Now â $12/mo</button>
+      <p style="color:#64748b;margin:0 0 24px;font-size:0.9rem">$12/month — cancel anytime</p>
+      <button class="btn-primary" @click="startCheckout()" style="padding:12px 32px;font-size:1rem">Subscribe Now — $12/mo</button>
     </div>
 
-    <!-- Subscribed â show analyzer -->
+    <!-- Subscribed — show analyzer -->
     <div x-show="user && subscribed" style="display:none">
       <!-- Upload -->
       <div x-show="!analyzing && !result" class="card-dark" style="border-radius:16px;padding:32px">
@@ -386,7 +387,7 @@
         </div>
         <div x-show="selectedFile" style="margin-top:20px;padding:14px 16px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:10px;display:flex;align-items:center;justify-content:space-between">
           <span style="color:#a5b4fc;font-size:0.9rem" x-text="selectedFile ? selectedFile.name : ''"></span>
-          <button @click="selectedFile=null" style="color:#64748b;background:none;border:none;cursor:pointer;font-size:1.2rem">Ã</button>
+          <button @click="selectedFile=null" style="color:#64748b;background:none;border:none;cursor:pointer;font-size:1.2rem">×</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px">
           <div>
@@ -418,7 +419,7 @@
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px">
             <div>
               <h3 style="color:white;font-weight:700;font-size:1.3rem;margin:0 0 6px">Analysis Complete</h3>
-              <p style="color:#64748b;font-size:0.9rem;margin:0" x-text="location + (bedrooms ? ' Â· ' + bedrooms + ' BR' : '')"></p>
+              <p style="color:#64748b;font-size:0.9rem;margin:0" x-text="location + (bedrooms ? ' · ' + bedrooms + ' BR' : '')"></p>
             </div>
             <span :class="'risk-' + (result ? result.risk_level : '')" x-text="result ? result.risk_level + ' Risk' : ''"></span>
           </div>
@@ -442,7 +443,7 @@
       </div>
       <p style="color:#475569;font-size:0.82rem;margin:0">AI-powered lease review for renters.</p>
     </div>
-    <p style="color:#334155;font-size:0.8rem;margin:0">Â© 2024 LeaseScan AI. Not legal advice.</p>
+    <p style="color:#334155;font-size:0.8rem;margin:0">© 2024 LeaseScan AI. Not legal advice.</p>
   </div>
 </footer>
 
@@ -488,7 +489,7 @@ function leaseApp() {
       const tokenType = hashParams.get('type');
       if (accessToken) {
         if (tokenType === 'recovery') {
-          // Password reset flow â show set-new-password modal
+          // Password reset flow — show set-new-password modal
           this.recoveryToken = accessToken;
           this.showResetPassword = true;
           window.history.replaceState({}, '', '/');
