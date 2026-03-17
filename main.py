@@ -83,6 +83,49 @@ async def subscription_status(user: dict = Depends(get_user)):
     return {"active": bool(subs.data)}
 
 # ââ Lease analysis (requires active subscription) ââââââââââââââââââââââââââââââ
+async def get_rent_data(address: str, zip_code: str, bedrooms: int) -> dict:
+    """Fetch market rent estimate and ZIP-level stats from RentCast."""
+    headers = {"X-Api-Key": RENTCAST_API_KEY}
+    result = {}
+    async with httpx.AsyncClient(timeout=8.0) as hc:
+        if address and address.strip():
+            try:
+                r = await hc.get(
+                    "https://api.rentcast.io/v1/avm/rent/long-term",
+                    params={"address": address, "bedrooms": bedrooms, "propertyType": "Apartment"},
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    d = r.json()
+                    result["estimate"] = d.get("price") or d.get("rent")
+                    result["estimate_low"] = d.get("priceLow") or d.get("rentRangeLow")
+                    result["estimate_high"] = d.get("priceHigh") or d.get("rentRangeHigh")
+            except Exception:
+                pass
+        if zip_code and zip_code.strip():
+            try:
+                r = await hc.get(
+                    "https://api.rentcast.io/v1/markets",
+                    params={"zipCode": zip_code, "bedrooms": bedrooms, "propertyType": "Apartment", "historyRange": 12},
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    d = r.json()
+                    rental = d.get("rentalData") or d.get("rental") or d
+                    result["avg_rent"] = rental.get("averageRent") or rental.get("medianRent")
+                    result["yoy_change"] = rental.get("yearOverYearChange")
+                    result["mom_change"] = rental.get("monthOverMonthChange")
+                    result["vacancy_rate"] = rental.get("vacancyRate") or d.get("vacancyRate")
+                    history = (rental.get("averageRentHistory") or rental.get("monthlyRentHistory") or rental.get("rentHistory") or [])
+                    result["history"] = [
+                        {"month": h.get("month") or h.get("date"), "rent": h.get("value") or h.get("rent")}
+                        for h in history[-12:] if h.get("month") or h.get("date")
+                    ]
+            except Exception:
+                pass
+    return result
+
+
 @app.post("/api/analyze")
 async def analyze(
     file: UploadFile = File(...),
@@ -117,7 +160,13 @@ Analyze the following residential lease agreement and return a JSON object with 
 - "market_comparison": 1-2 sentences comparing key terms to typical leases{' in ' + location if location else ''}
 - "negotiation_tips": array of strings â actionable advice for negotiating better terms
 - "key_dates": array of objects with "label" and "value" â important dates/deadlines
-- "financial_summary": object with "monthly_rent", "security_deposit", "late_fee", "other_fees"
+- "monthly_rent": number — monthly rent amount in dollars (null if not stated)
+- "street_address": string — property street address extracted from the lease (null if not found)
+- "zip_code": string — 5-digit US ZIP code (null if not found)
+- "bedrooms": integer — number of bedrooms (null if not stated)
+- "state": string — 2-letter US state code where the property is located, e.g. "CA" (null if unclear)
+- "illegal_clauses": array of objects with "title", "description", and "law" — clauses that appear illegal or unenforceable under the applicable state landlord-tenant law; each "law" field should cite the relevant statute or case law; return empty array if state is unknown or no illegal clauses are found
+- "financial_summary": object with "security_deposit", "late_fee", "other_fees"
 
 Lease text:
 {text}
@@ -128,7 +177,7 @@ Return ONLY valid JSON, no markdown, no explanation."""
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=2500,
+        max_tokens=3500,
     )
     raw = response.choices[0].message.content.strip()
     raw = re.sub(r"^```json\s*", "", raw)
