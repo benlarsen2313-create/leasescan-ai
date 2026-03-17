@@ -16,6 +16,7 @@ STRIPE_SECRET    = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_ID  = os.environ.get("STRIPE_PRICE_ID", "")
 APP_URL          = os.environ.get("APP_URL", "https://www.leasescanai.com")
 RENTCAST_API_KEY = os.environ.get("RENTCAST_API_KEY", "")
+PROMO_CODE = "freescan"
 
 stripe.api_key = STRIPE_SECRET
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -40,8 +41,10 @@ async def get_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return r.json()
 
-async def require_active_subscription(user: dict = Depends(get_user)) -> dict:
-    """Check that the user has an active Stripe subscription."""
+async def require_active_subscription(request: Request, user: dict = Depends(get_user)) -> dict:
+    """Check that the user has an active Stripe subscription (or valid promo code)."""
+    if request.headers.get("X-Promo-Code", "") == PROMO_CODE:
+        return user
     email = user.get("email")
     if not email:
         raise HTTPException(status_code=401, detail="Could not determine user email")
